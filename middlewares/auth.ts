@@ -7,13 +7,13 @@ export const authMiddleware = tryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer")) {
+    if (!authHeader) {
       return res
         .status(401)
         .json({ error: "Unauthorized: No token provided!" });
     }
 
-    const token = authHeader.split("")[1];
+    const token = authHeader;
 
     const payload = verify(token, process.env.JWT_SECRET!) as {
       userId: number;
@@ -29,5 +29,5 @@ export const authMiddleware = tryCatch(
 
     req.user = user;
     next();
-  }
+  },
 );
