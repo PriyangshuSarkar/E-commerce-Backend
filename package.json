@@ -12,6 +12,13 @@
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
-    "express": "^4.19.2"
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/morgan": "^1.9.9",
+    "bcrypt": "^5.1.1",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "zod": "^3.23.8"
   }
 }
