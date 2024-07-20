@@ -1,19 +1,23 @@
 import type { Request, Response, NextFunction } from "express";
-import type { CustomError } from "../types/error";
+import { ZodError } from "zod";
 
 export const errorHandler = (
-  err: CustomError,
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   console.error(err);
 
-  const status = err.status || 500;
-  const message = err.message || "Internal Server Error";
+  let status = err.status || 500;
+  let message = err.message || "Internal Server Error";
+
+  if (err instanceof ZodError) {
+    message = "Un-processable Entity!";
+  }
 
   res.status(status).json({
-    status,
     message,
+    error: err,
   });
 };

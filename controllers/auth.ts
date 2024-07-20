@@ -33,7 +33,7 @@ export const signup = tryCatch(
     });
 
     return res.status(201).json({ user: userWithoutPassword, token });
-  },
+  }
 );
 
 // *Login Route
@@ -59,12 +59,12 @@ export const login = tryCatch(
     });
 
     return res.status(200).json({ user: userWithoutPassword, token });
-  },
+  }
 );
 
 // *Me Route
 export const me = tryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
     res.json(req.user);
-  },
+  }
 );
