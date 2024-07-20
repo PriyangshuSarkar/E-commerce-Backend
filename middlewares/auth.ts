@@ -29,5 +29,5 @@ export const authMiddleware = tryCatch(
 
     req.user = user;
     next();
-  },
+  }
 );
