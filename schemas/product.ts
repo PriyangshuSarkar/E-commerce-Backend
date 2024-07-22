@@ -1,4 +1,4 @@
-import { number, object, optional, string } from "zod";
+import { number, object, string } from "zod";
 
 export const CreateProductSchema = object({
   name: string(),
@@ -8,10 +8,10 @@ export const CreateProductSchema = object({
 });
 
 export const UpdateProductSchema = object({
-  name: optional(string()),
-  description: optional(string()),
-  tags: optional(string().array()),
-  price: optional(number()),
+  name: string().optional(),
+  description: string().optional(),
+  tags: string().array().optional(),
+  price: number().optional(),
 }).superRefine((data) => {
   const hasValue = Object.values(data).some((value) => value !== undefined);
   if (!hasValue) {

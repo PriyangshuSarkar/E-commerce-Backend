@@ -3,7 +3,7 @@ import rootRouter from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { PrismaClient } from "@prisma/client";
 import morgan from "morgan";
-import { SignUpSchema } from "./schemas/user";
+import { SignUpSchema } from "./schemas/auth";
 
 // import type { NextFunction, Request, Response } from "express";
 // import { tryCatch } from "./middlewares/tryCatch";
@@ -29,6 +29,6 @@ app.listen(process.env.PORT, (err?: any) => {
   if (err) {
     console.log(`Server failed to start with the error:\n${err}`);
   } else {
-    console.log(`App working at port: ${process.env.PORT}`);
+    console.log(`App working at http://localhost:${process.env.PORT}`);
   }
 });

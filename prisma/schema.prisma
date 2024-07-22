@@ -17,12 +17,13 @@ enum Role {
   ADMIN
   USER
 }
+
 model User {
-  id Int @id @default(autoincrement())
-  name String
-  email String @unique
-  password String
-  role Role @default(USER)
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -31,15 +32,16 @@ model User {
   @@map("users")
 }
 
-model Address{
-  id Int @id @default(autoincrement())
-  lineOne String
-  lineTwo String
-  city String
-  pincode String
-  phone String
-  userId Int
-  user User @relation(fields: [userId], references: [id])
+model Address {
+  id        Int      @id @default(autoincrement())
+  lineOne   String
+  lineTwo   String?
+  city      String
+  country   String
+  pincode   String
+  phone     String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -47,13 +49,13 @@ model Address{
 }
 
 model Product {
-  id Int @id @default(autoincrement())
-  name String
-  description String @db.Text
-  price Decimal
-  tags String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  price       Decimal
+  tags        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("products")
 }
