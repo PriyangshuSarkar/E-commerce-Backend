@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import rootRouter from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { PrismaClient } from "@prisma/client";
-import logger from "./logger";
+import logger from "./utils/logger";
 
 // import type { NextFunction, Request, Response } from "express";
 // import { tryCatch } from "./middlewares/tryCatch";
