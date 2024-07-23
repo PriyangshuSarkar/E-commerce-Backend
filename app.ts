@@ -1,34 +1,27 @@
-import express, { type Express } from "express";
+import express, {
+  type Express,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import rootRouter from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { PrismaClient } from "@prisma/client";
 import logger from "./utils/logger";
-
-// import type { NextFunction, Request, Response } from "express";
-// import { tryCatch } from "./middlewares/tryCatch";
+import loggerMiddleware from "./middlewares/logger";
 
 const app: Express = express();
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  logger.info(`Request: ${req.method} ${req.url}`);
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    logger.info(`Response: ${res.statusCode} Duration: ${duration}ms`);
-  });
-  next();
-});
+app.use(express.json());
+app.use(loggerMiddleware);
 
 // *prismaClient
 export const prismaClient = new PrismaClient({});
 
 // *use
-app.use(express.json());
 app.use("/api", rootRouter);
+
 app.use(errorHandler);
-// app.get("/", (req: Request, res: Response, next: NextFunction) => {
-//   res.send("Working");
-// });
 
 // *Server Start
 app.listen(process.env.PORT, (err?: any) => {
