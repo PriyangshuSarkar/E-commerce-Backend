@@ -1,15 +1,16 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { tryCatch } from "../middlewares/tryCatch";
-import type { LoginRequest, SignupRequest } from "../types/auth";
+import type { LoginRequest, SignupRequest } from "../types/user";
 import { prismaClient } from "../app";
 import { hashSync, compareSync } from "bcrypt";
 import { sign } from "jsonwebtoken";
-import { LoginSchema, SignUpSchema } from "../schemas/auth";
+import { LoginSchema, SignupSchema } from "../schemas/user";
+import type { Address } from "@prisma/client";
 
 // *Signup Route
 export const signup = tryCatch(
   async (req: Request<{}, {}, SignupRequest>, res: Response) => {
-    SignUpSchema.parse(req.body);
+    SignupSchema.parse(req.body);
     const { email, password, name } = req.body;
 
     const user = await prismaClient.user.findFirst({ where: { email } });
@@ -33,7 +34,7 @@ export const signup = tryCatch(
     });
 
     return res.status(201).json({ user: userWithoutPassword, token });
-  }
+  },
 );
 
 // *Login Route
@@ -59,10 +60,10 @@ export const login = tryCatch(
     });
 
     return res.status(200).json({ user: userWithoutPassword, token });
-  }
+  },
 );
 
 // *Me Route
 export const me = tryCatch(async (req: Request, res: Response) => {
-  res.json(req.user);
+  return res.json(req.user);
 });

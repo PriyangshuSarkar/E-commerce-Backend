@@ -1,0 +1,76 @@
+{"level":"info","message":"Request: POST /api/auth/login","timestamp":"2024-07-23T12:42:08.944Z"}
+{"level":"info","message":"Response: 200 Duration: 241ms","timestamp":"2024-07-23T12:42:09.184Z"}
+2024-07-23T12:44:01.356Z [[32minfo[39m]: Request: POST /api/auth/login
+2024-07-23T12:44:01.589Z [[32minfo[39m]: Response: 200 Duration: 235ms
+2024-07-23T12:45:39.464Z [[32minfo[39m]: [32mRequest: POST /api/auth/login[39m
+2024-07-23T12:45:39.565Z [[32minfo[39m]: [32mResponse: 200 Duration: 102ms[39m
+2024-07-23T12:50:27.878Z [[32minfo[39m]: [32mRequest: POST /api/user/login[39m
+2024-07-23T12:50:28.069Z [[32minfo[39m]: [32mResponse: 200 Duration: 193ms[39m
+2024-07-23T12:50:46.150Z [[32minfo[39m]: [32mRequest: GET /api/user/me[39m
+2024-07-23T12:50:46.162Z [[32minfo[39m]: [32mResponse: 200 Duration: 12ms[39m
+2024-07-23T13:45:44.135Z [[32minfo[39m]: [32mRequest: POST /api/address/update/6[39m
+2024-07-23T13:45:44.164Z [[32minfo[39m]: [32mResponse: 404 Duration: 31ms[39m
+2024-07-23T13:45:50.762Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T13:45:50.786Z [[32minfo[39m]: [32mResponse: 404 Duration: 24ms[39m
+2024-07-23T13:46:03.727Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T13:46:03.819Z [[32minfo[39m]: [32mResponse: 500 Duration: 93ms[39m
+2024-07-23T13:46:49.978Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T13:46:50.030Z [[32minfo[39m]: [32mResponse: 500 Duration: 53ms[39m
+2024-07-23T13:46:58.562Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T13:46:58.586Z [[32minfo[39m]: [32mResponse: 500 Duration: 24ms[39m
+2024-07-23T13:48:15.812Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T13:48:15.886Z [[32minfo[39m]: [32mResponse: 500 Duration: 75ms[39m
+2024-07-23T13:49:24.664Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T13:49:24.762Z [[32minfo[39m]: [32mResponse: 500 Duration: 98ms[39m
+2024-07-23T13:52:01.955Z [[32minfo[39m]: [32mRequest: PUT /api/product/update/9[39m
+2024-07-23T13:52:02.040Z [[32minfo[39m]: [32mResponse: 400 Duration: 87ms[39m
+2024-07-23T13:53:01.535Z [[32minfo[39m]: [32mRequest: PUT /api/product/update/2[39m
+2024-07-23T13:53:01.574Z [[32minfo[39m]: [32mResponse: 200 Duration: 40ms[39m
+2024-07-23T13:53:39.914Z [[32minfo[39m]: [32mRequest: GET /api/product/get/1[39m
+2024-07-23T13:53:39.944Z [[32minfo[39m]: [32mResponse: 200 Duration: 30ms[39m
+2024-07-23T13:53:59.029Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T13:53:59.059Z [[32minfo[39m]: [32mResponse: 500 Duration: 30ms[39m
+2024-07-23T13:54:26.911Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T13:54:26.940Z [[32minfo[39m]: [32mResponse: 500 Duration: 29ms[39m
+2024-07-23T13:56:04.420Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T13:56:04.560Z [[32minfo[39m]: [32mResponse: 500 Duration: 140ms[39m
+2024-07-23T13:56:37.327Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T13:56:37.389Z [[32minfo[39m]: [32mResponse: 500 Duration: 63ms[39m
+2024-07-23T13:57:49.916Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T13:57:49.966Z [[32minfo[39m]: [32mResponse: 403 Duration: 52ms[39m
+2024-07-23T13:58:46.370Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T13:58:46.435Z [[32minfo[39m]: [32mResponse: 500 Duration: 67ms[39m
+2024-07-23T13:59:14.117Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T13:59:14.201Z [[32minfo[39m]: [32mResponse: 500 Duration: 86ms[39m
+2024-07-23T13:59:56.238Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T13:59:56.350Z [[32minfo[39m]: [32mResponse: 500 Duration: 113ms[39m
+2024-07-23T14:00:28.346Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:00:28.414Z [[32minfo[39m]: [32mResponse: 500 Duration: 70ms[39m
+2024-07-23T14:01:58.272Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:01:58.356Z [[32minfo[39m]: [32mResponse: 500 Duration: 86ms[39m
+2024-07-23T14:02:48.476Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:02:48.518Z [[32minfo[39m]: [32mResponse: 500 Duration: 43ms[39m
+2024-07-23T14:04:00.184Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:04:00.330Z [[32minfo[39m]: [32mResponse: 500 Duration: 147ms[39m
+2024-07-23T14:05:05.258Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:05:05.362Z [[32minfo[39m]: [32mResponse: 500 Duration: 105ms[39m
+2024-07-23T14:05:42.128Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:05:42.194Z [[32minfo[39m]: [32mResponse: 500 Duration: 66ms[39m
+2024-07-23T14:07:26.381Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:09:06.469Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:11:37.139Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:11:37.233Z [[32minfo[39m]: [32mResponse: 200 Duration: 96ms[39m
+2024-07-23T14:12:56.711Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/5[39m
+2024-07-23T14:12:56.957Z [[32minfo[39m]: [32mResponse: 200 Duration: 246ms[39m
+2024-07-23T14:13:12.051Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/4[39m
+2024-07-23T14:13:12.076Z [[32minfo[39m]: [32mResponse: 403 Duration: 25ms[39m
+2024-07-23T14:13:22.818Z [[32minfo[39m]: [32mRequest: PUT /api/address/update/6[39m
+2024-07-23T14:13:22.836Z [[32minfo[39m]: [32mResponse: 500 Duration: 18ms[39m
+2024-07-23T14:17:57.473Z [[32minfo[39m]: [32mRequest: POST /api/address/add[39m
+2024-07-23T14:17:57.805Z [[32minfo[39m]: [32mResponse: 201 Duration: 333ms[39m
+2024-07-23T14:19:32.801Z [[32minfo[39m]: [32mRequest: PUT /api/address/change/default[39m
+2024-07-23T14:19:33.002Z [[32minfo[39m]: [32mResponse: 200 Duration: 203ms[39m
+2024-07-23T14:20:09.794Z [[32minfo[39m]: [32mRequest: PUT /api/address/change/default[39m
+2024-07-23T14:20:09.880Z [[32minfo[39m]: [32mResponse: 200 Duration: 88ms[39m
+2024-07-23T14:20:39.619Z [[32minfo[39m]: [32mRequest: PUT /api/address/change/default[39m
+2024-07-23T14:20:39.668Z [[32minfo[39m]: [32mResponse: 200 Duration: 51ms[39m

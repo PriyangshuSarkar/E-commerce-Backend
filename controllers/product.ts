@@ -4,7 +4,6 @@ import { prismaClient } from "../app";
 import { CreateProductSchema, UpdateProductSchema } from "../schemas/product";
 import type {
   CreateProductRequest,
-  ParamsRequest,
   UpdateProductRequest,
 } from "../types/product";
 
@@ -15,15 +14,15 @@ export const createProduct = tryCatch(
     const product = await prismaClient.product.create({
       data: { ...req.body, tags: req.body.tags.join(",") },
     });
-    res.json(product);
-  }
+    return res.json(product);
+  },
 );
 
 // *Update Product
 export const updateProduct = tryCatch(
   async (
-    req: Request<ParamsRequest, {}, UpdateProductRequest>,
-    res: Response
+    req: Request<{ id?: string }, {}, UpdateProductRequest>,
+    res: Response,
   ) => {
     UpdateProductSchema.parse(req.body);
     const product = req.body;
@@ -40,12 +39,13 @@ export const updateProduct = tryCatch(
       where: { id: +req.params.id! },
       data: product,
     });
-    res.json(updateProduct);
-  }
+    return res.json(updateProduct);
+  },
 );
 
+// *Delete Product
 export const deleteProduct = tryCatch(
-  async (req: Request<ParamsRequest>, res: Response) => {
+  async (req: Request<{ id?: string }>, res: Response) => {
     const product = req.body;
     const existingProduct = await prismaClient.product.findFirst({
       where: { id: +req.params.id! },
@@ -58,23 +58,23 @@ export const deleteProduct = tryCatch(
     await prismaClient.product.delete({
       where: { id: +id },
     });
-    res.json(`Product: ${name} deleted of Id: ${id}`);
-  }
+    return res.json(`Product: ${name} deleted of Id: ${id}`);
+  },
 );
 
-export const listProducts = tryCatch(
-  async (req: Request<ParamsRequest>, res: Response) => {
-    const count = await prismaClient.product.count();
-    const product = await prismaClient.product.findMany({
-      skip: +req.query.skip! || 0,
-      take: 5,
-    });
-    res.json({ count, data: product });
-  }
-);
+// *ListAllProducts
+export const listProducts = tryCatch(async (req: Request, res: Response) => {
+  const count = await prismaClient.product.count();
+  const product = await prismaClient.product.findMany({
+    skip: +req.query.skip! || 0,
+    take: 5,
+  });
+  return res.json({ count, data: product });
+});
 
+// *GetProductById
 export const getProductById = tryCatch(
-  async (req: Request<ParamsRequest>, res: Response) => {
+  async (req: Request<{ id?: string }>, res: Response) => {
     const product = req.body;
     const existingProduct = await prismaClient.product.findFirst({
       where: { id: +req.params.id! },
@@ -82,6 +82,6 @@ export const getProductById = tryCatch(
     if (!product || !existingProduct) {
       return res.status(400).json({ error: "Invalid Product id!" });
     }
-    res.json(existingProduct);
-  }
+    return res.json(existingProduct);
+  },
 );

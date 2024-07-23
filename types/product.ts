@@ -11,8 +11,3 @@ export interface UpdateProductRequest {
   tags?: any;
   price?: number;
 }
-
-export interface ParamsRequest {
-  id?: string;
-  skip?: string;
-}

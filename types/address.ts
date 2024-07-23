@@ -5,5 +5,18 @@ export interface AddAddressRequest {
   country: string;
   pincode: string;
   phone: string;
-  id: number; // !id reffers to the userId.
+}
+
+export interface ChangeDefaultAddressRequest {
+  defaultShippingAddressId?: number;
+  defaultBillingAddressId?: number;
+}
+
+export interface UpdateAddressRequest {
+  lineOne?: string;
+  lineTwo?: string;
+  city?: string;
+  country?: string;
+  pincode?: string;
+  phone?: string;
 }

@@ -13,12 +13,24 @@ const productRoutes: Router = Router();
 
 productRoutes.post("/new", [authMiddleware, adminMiddleware], createProduct);
 
-productRoutes.put("/:id", [authMiddleware, adminMiddleware], updateProduct);
+productRoutes.put(
+  "/update/:id",
+  [authMiddleware, adminMiddleware],
+  updateProduct,
+);
 
-productRoutes.delete("/:id", [authMiddleware, adminMiddleware], deleteProduct);
+productRoutes.delete(
+  "/delete/:id",
+  [authMiddleware, adminMiddleware],
+  deleteProduct,
+);
 
-productRoutes.get("/all", [authMiddleware, adminMiddleware], listProducts);
+productRoutes.get("/get/all", [authMiddleware, adminMiddleware], listProducts);
 
-productRoutes.get("/:id", [authMiddleware, adminMiddleware], getProductById);
+productRoutes.get(
+  "/get/:id",
+  [authMiddleware, adminMiddleware],
+  getProductById,
+);
 
 export default productRoutes;

@@ -1,11 +1,11 @@
 import { Router } from "express";
-import authRoutes from "./auth";
+import authRoutes from "./user";
 import productRoutes from "./product";
 import addressRoutes from "./address";
 
 const rootRouter: Router = Router();
 
-rootRouter.use("/auth", authRoutes);
+rootRouter.use("/user", authRoutes);
 
 rootRouter.use("/product", productRoutes);
 

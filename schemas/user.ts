@@ -1,6 +1,6 @@
-import { object, string } from "zod";
+import { number, object, string } from "zod";
 
-export const SignUpSchema = object({
+export const SignupSchema = object({
   name: string(),
   email: string().email(),
   password: string().min(6),
