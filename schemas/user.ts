@@ -10,3 +10,8 @@ export const LoginSchema = object({
   email: string().email(),
   password: string(),
 });
+
+export const ChangePasswordSchema = object({
+  oldPassword: string(),
+  newPassword: string().min(6),
+});

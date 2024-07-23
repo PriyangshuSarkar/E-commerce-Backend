@@ -14,7 +14,7 @@ export const createProduct = tryCatch(
     const product = await prismaClient.product.create({
       data: { ...req.body, tags: req.body.tags.join(",") },
     });
-    return res.json(product);
+    return res.status(201).json({ product });
   },
 );
 
@@ -39,7 +39,7 @@ export const updateProduct = tryCatch(
       where: { id: +req.params.id! },
       data: product,
     });
-    return res.json(updateProduct);
+    return res.status(201).json({ updateProduct });
   },
 );
 
@@ -58,7 +58,9 @@ export const deleteProduct = tryCatch(
     await prismaClient.product.delete({
       where: { id: +id },
     });
-    return res.json(`Product: ${name} deleted of Id: ${id}`);
+    return res
+      .status(200)
+      .json({ message: `Product: ${name} deleted of Id: ${id}` });
   },
 );
 
@@ -69,7 +71,7 @@ export const listProducts = tryCatch(async (req: Request, res: Response) => {
     skip: +req.query.skip! || 0,
     take: 5,
   });
-  return res.json({ count, data: product });
+  return res.status(200).json({ count, data: product });
 });
 
 // *GetProductById
@@ -82,6 +84,6 @@ export const getProductById = tryCatch(
     if (!product || !existingProduct) {
       return res.status(400).json({ error: "Invalid Product id!" });
     }
-    return res.json(existingProduct);
+    return res.status(200).json({ existingProduct });
   },
 );

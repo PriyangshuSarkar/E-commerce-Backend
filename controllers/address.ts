@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response } from "express";
 import { tryCatch } from "../middlewares/tryCatch";
 import {
   AddAddressSchema,
@@ -74,7 +74,6 @@ export const updateAddress = tryCatch(
   async (
     req: Request<{ id?: string }, {}, UpdateAddressRequest>,
     res: Response,
-    next: NextFunction,
   ) => {
     UpdateAddressSchema.parse(req.body);
     const newAddress = req.body;
@@ -95,17 +94,13 @@ export const updateAddress = tryCatch(
       where: { id: +req.params.id! },
       data: newAddress,
     });
-    return res.json(updateAddress);
+    return res.status(201).json({ updateAddress });
   },
 );
 
 // *Change Default Address
 export const changeDefaultAddress = tryCatch(
-  async (
-    req: Request<{}, {}, ChangeDefaultAddressRequest>,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  async (req: Request<{}, {}, ChangeDefaultAddressRequest>, res: Response) => {
     const validatedData = ChangeDefaultAddressSchema.parse(req.body);
     if (validatedData.defaultShippingAddressId) {
       let shippingAddress: Address;
@@ -140,6 +135,6 @@ export const changeDefaultAddress = tryCatch(
       data: validatedData,
     });
 
-    return res.json(updatedUser);
+    return res.status(201).json({ updatedUser });
   },
 );

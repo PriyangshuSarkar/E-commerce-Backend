@@ -1,10 +1,18 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import { tryCatch } from "../middlewares/tryCatch";
-import type { LoginRequest, SignupRequest } from "../types/user";
+import type {
+  ChangePasswordRequest,
+  LoginRequest,
+  SignupRequest,
+} from "../types/user";
 import { prismaClient } from "../app";
 import { hashSync, compareSync } from "bcrypt";
 import { sign } from "jsonwebtoken";
-import { LoginSchema, SignupSchema } from "../schemas/user";
+import {
+  ChangePasswordSchema,
+  LoginSchema,
+  SignupSchema,
+} from "../schemas/user";
 import type { Address } from "@prisma/client";
 
 // *Signup Route
@@ -65,5 +73,22 @@ export const login = tryCatch(
 
 // *Me Route
 export const me = tryCatch(async (req: Request, res: Response) => {
-  return res.json(req.user);
+  return res.status(200).json(req.user);
 });
+
+export const changePassword = tryCatch(
+  async (req: Request<{}, {}, ChangePasswordRequest>, res: Response) => {
+    ChangePasswordSchema.parse(req.body);
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+    if (!compareSync(oldPassword, req.user.password)) {
+      return res.status(401).json({ error: "Incorrect password!" });
+    }
+
+    await prismaClient.user.update({
+      where: { id: +req.user.id! },
+      data: { password: hashSync(newPassword, 10) },
+    });
+    return res.status(201).json({ message: "Password updated successfully!" });
+  },
+);
