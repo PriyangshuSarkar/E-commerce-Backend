@@ -1,7 +1,8 @@
 import { Router } from "express";
 import {
   addAddress,
-  changeDefaultAddress,
+  changeDefaultBillingAddress,
+  changeDefaultShippingAddress,
   deleteAddress,
   listAddress,
   updateAddress,
@@ -18,6 +19,16 @@ addressRoutes.get("/all", authMiddleware, listAddress);
 
 addressRoutes.put("/update/:id", authMiddleware, updateAddress);
 
-addressRoutes.put("/change/default", authMiddleware, changeDefaultAddress);
+addressRoutes.put(
+  "/shipping/default/:id",
+  authMiddleware,
+  changeDefaultShippingAddress,
+);
+
+addressRoutes.put(
+  "/billing/default/:id",
+  authMiddleware,
+  changeDefaultBillingAddress,
+);
 
 export default addressRoutes;

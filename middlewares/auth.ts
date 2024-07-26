@@ -16,11 +16,11 @@ export const authMiddleware = tryCatch(
     const token = authHeader;
 
     const payload = verify(token, process.env.JWT_SECRET!) as {
-      userId: number;
+      userId: string;
     };
 
-    const user = await prismaClient.user.findFirst({
-      where: { id: payload.userId },
+    const user = await prismaClient.user.findUniqueOrThrow({
+      where: { id: payload.userId, deletedAt: null },
     });
 
     if (!user) {

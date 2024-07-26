@@ -7,11 +7,6 @@ export interface AddAddressRequest {
   phone: string;
 }
 
-export interface ChangeDefaultAddressRequest {
-  defaultShippingAddressId?: number;
-  defaultBillingAddressId?: number;
-}
-
 export interface UpdateAddressRequest {
   lineOne?: string;
   lineTwo?: string;

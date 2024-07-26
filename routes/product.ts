@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
+  addCategory,
   createProduct,
+  deleteCategory,
   deleteProduct,
   getProductById,
   listProducts,
@@ -16,13 +18,13 @@ productRoutes.post("/new", [authMiddleware, adminMiddleware], createProduct);
 productRoutes.put(
   "/update/:id",
   [authMiddleware, adminMiddleware],
-  updateProduct,
+  updateProduct
 );
 
 productRoutes.delete(
   "/delete/:id",
   [authMiddleware, adminMiddleware],
-  deleteProduct,
+  deleteProduct
 );
 
 productRoutes.get("/get/all", [authMiddleware, adminMiddleware], listProducts);
@@ -30,7 +32,19 @@ productRoutes.get("/get/all", [authMiddleware, adminMiddleware], listProducts);
 productRoutes.get(
   "/get/:id",
   [authMiddleware, adminMiddleware],
-  getProductById,
+  getProductById
+);
+
+productRoutes.post(
+  "/category/add",
+  [authMiddleware, adminMiddleware],
+  addCategory
+);
+
+productRoutes.delete(
+  "/category/delete/:id",
+  [authMiddleware, adminMiddleware],
+  deleteCategory
 );
 
 export default productRoutes;

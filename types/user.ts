@@ -13,3 +13,12 @@ export interface ChangePasswordRequest {
   oldPassword: string;
   newPassword: string;
 }
+
+export interface UpdateUserRequest {
+  email?: string;
+  name?: string;
+}
+
+export interface DeleteUserRequest {
+  password?: string;
+}

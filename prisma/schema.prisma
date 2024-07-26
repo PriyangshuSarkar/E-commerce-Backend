@@ -4,6 +4,9 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,46 +21,156 @@ enum Role {
   USER
 }
 
-model User {
-  id                       Int      @id @default(autoincrement())
-  name                     String
-  email                    String   @unique
-  password                 String
-  role                     Role     @default(USER)
-  defaultShippingAddressId Int?
-  defaultBillingAddressId  Int?
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
 
-  addresses Address[]
+model User {
+  id                       String    @id @default(cuid())
+  name                     String
+  email                    String    @unique
+  password                 String
+  role                     Role      @default(USER)
+  defaultShippingAddressId String?
+  defaultBillingAddressId  String?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  deletedAt                DateTime?
+  addresses                Address[]
+  cart                     Cart?
+  orders                   Order[]
+  reviews                  Review[]
 
   @@map("users")
 }
 
 model Address {
-  id        Int      @id @default(autoincrement())
-  lineOne   String
-  lineTwo   String?
-  city      String
-  country   String
-  pincode   String
-  phone     String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  lineOne        String
+  lineTwo        String?
+  city           String
+  country        String
+  pincode        String
+  phone          String
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  shippingOrders Order[]   @relation("ShippingAddress")
+  billingOrders  Order[]   @relation("BillingAddress")
 
   @@map("addresses")
 }
 
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+
+  @@map("tags")
+}
+
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          String      @id @default(cuid())
+  sku         String      @unique
   name        String
-  description String   @db.Text
+  description String      @db.Text
+  imageUrl    String?
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  tags        Tag[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  reviews     Review[]
   price       Decimal
-  tags        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  stock       Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
 
   @@map("products")
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+  totalAmount       Decimal
+  status            OrderStatus
+  shippingAddressId String
+  billingAddressId  String
+  shippingAddress   Address     @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  billingAddress    Address     @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("order_items")
+}
+
+model Review {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  productId String
+  product   Product   @relation(fields: [productId], references: [id])
+  rating    Int
+  comment   String?   @db.Text
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@map("reviews")
 }
