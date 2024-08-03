@@ -3,11 +3,10 @@ export interface CreateProductRequest {
   name: string;
   description: string;
   tags: string[];
-  price: number;
-  quantity: number;
+  price: string;
+  quantity: string;
   categoryId: string;
-  stock: number;
-  imageUrl?: string;
+  stock: string;
 }
 
 export interface UpdateProductRequest {
@@ -15,13 +14,23 @@ export interface UpdateProductRequest {
   name?: string;
   description?: string;
   tags?: string[];
-  price?: number;
-  quantity?: number;
+  price?: string;
+  quantity?: string;
   categoryId?: string;
-  stock?: number;
-  imageUrl?: string;
+  stock?: string;
 }
 
 export interface AddCategoryRequest {
   category: string;
+}
+
+export interface FilterAndSortProductsRequest {
+  page?: string;
+  limit?: string;
+  category?: string;
+  tags?: string[];
+  minPrice?: string;
+  maxPrice?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }

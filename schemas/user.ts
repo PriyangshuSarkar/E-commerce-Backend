@@ -1,5 +1,5 @@
 import { password } from "bun";
-import { number, object, string } from "zod";
+import { number, object, string, enum as enum_ } from "zod";
 
 export const SignupSchema = object({
   name: string(),
@@ -30,4 +30,8 @@ export const UpdateUserSchema = object({
 
 export const DeleteUserSchema = object({
   password: string(),
+});
+
+export const ChangeUserRoleSchema = object({
+  role: enum_(["ADMIN", "USER"]),
 });

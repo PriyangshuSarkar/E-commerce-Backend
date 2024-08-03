@@ -22,3 +22,7 @@ export interface UpdateUserRequest {
 export interface DeleteUserRequest {
   password?: string;
 }
+
+export interface ChangeUserRoleRequest {
+  role: "ADMIN" | "USER";
+}

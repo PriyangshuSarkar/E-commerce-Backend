@@ -1,26 +1,39 @@
 import { Router } from "express";
 import {
   changePassword,
+  changeUserRole,
   deleteUser,
+  getAllUsers,
+  getUserById,
   login,
   me,
+  searchUser,
   signup,
   updateUser,
 } from "../controllers/user";
 import { authMiddleware } from "../middlewares/auth";
+import { adminMiddleware } from "../middlewares/admin";
 
-const authRoutes: Router = Router();
+const userRoutes: Router = Router();
 
-authRoutes.post("/signup", signup);
+userRoutes.post("/signup", signup);
 
-authRoutes.post("/login", login);
+userRoutes.post("/login", login);
 
-authRoutes.get("/me", authMiddleware, me);
+userRoutes.get("/me", authMiddleware, me);
 
-authRoutes.put("/change/password", authMiddleware, changePassword);
+userRoutes.put("/change/password", authMiddleware, changePassword);
 
-authRoutes.put("/update", authMiddleware, updateUser);
+userRoutes.put("/update", authMiddleware, updateUser);
 
-authRoutes.delete("/delete", authMiddleware, deleteUser);
+userRoutes.delete("/delete", authMiddleware, deleteUser);
 
-export default authRoutes;
+userRoutes.get("/all", [authMiddleware, adminMiddleware], getAllUsers);
+
+userRoutes.get("/:id", [authMiddleware, adminMiddleware], getUserById);
+
+userRoutes.put("/:id", [authMiddleware, adminMiddleware], changeUserRole);
+
+userRoutes.get("/search/fuzzy", [authMiddleware, adminMiddleware], searchUser);
+
+export default userRoutes;

@@ -1,9 +1,4 @@
-import express, {
-  type Express,
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
+import express, { json, static as static_, type Express } from "express";
 import rootRouter from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { PrismaClient } from "@prisma/client";
@@ -12,8 +7,9 @@ import loggerMiddleware from "./middlewares/logger";
 
 const app: Express = express();
 
-app.use(express.json());
+app.use(json());
 app.use(loggerMiddleware);
+app.use("/public", static_("./public"));
 
 // *prismaClient
 export const prismaClient = new PrismaClient({});

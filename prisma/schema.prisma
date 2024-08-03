@@ -8,7 +8,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
 }
 
 datasource db {
@@ -45,6 +46,7 @@ model User {
   orders                   Order[]
   reviews                  Review[]
 
+  @@fulltext([name, email])
   @@map("users")
 }
 
@@ -72,6 +74,7 @@ model Category {
   name     String    @unique
   products Product[]
 
+  @@fulltext([name])
   @@map("categories")
 }
 
@@ -80,6 +83,7 @@ model Tag {
   name     String    @unique
   products Product[]
 
+  @@fulltext([name])
   @@map("tags")
 }
 
@@ -101,6 +105,7 @@ model Product {
   updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
 
+  @@fulltext([name, description])
   @@map("products")
 }
 
@@ -170,6 +175,7 @@ model Review {
   rating    Int
   comment   String?   @db.Text
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@map("reviews")

@@ -4,6 +4,7 @@ import { AddAddressSchema, UpdateAddressSchema } from "../schemas/address";
 import { prismaClient } from "../app";
 import type { AddAddressRequest, UpdateAddressRequest } from "../types/address";
 import type { Address } from "@prisma/client";
+import type { error } from "winston";
 
 // *AddNewAddress
 export const addAddress = tryCatch(
@@ -31,13 +32,13 @@ export const deleteAddress = tryCatch(
   async (req: Request<{ id?: string }>, res: Response) => {
     const addressId = req.params.id!;
     const { id: userId } = req.user;
-    const address = await prismaClient.address.findUniqueOrThrow({
+    const address = await prismaClient.address.findFirstOrThrow({
       where: { id: addressId, deletedAt: null },
     });
     if (address.userId !== userId) {
       return res
         .status(403)
-        .json({ message: "You are not authorized to delete this address!" });
+        .json({ error: "You are not authorized to delete this address!" });
     }
     await prismaClient.address.update({
       where: { id: addressId, deletedAt: null },
@@ -65,7 +66,7 @@ export const updateAddress = tryCatch(
     res: Response
   ) => {
     const validatedData = UpdateAddressSchema.parse(req.body);
-    const existingAddressId = await prismaClient.address.findUniqueOrThrow({
+    const existingAddressId = await prismaClient.address.findFirstOrThrow({
       where: {
         id: req.params.id!,
         deletedAt: null,
@@ -74,7 +75,7 @@ export const updateAddress = tryCatch(
     if (existingAddressId.userId !== req.user.id) {
       return res
         .status(403)
-        .json({ message: "You are not authorized to delete this address!" });
+        .json({ error: "You are not authorized to delete this address!" });
     }
     const updateAddress = await prismaClient.address.update({
       where: { id: req.params.id!, deletedAt: null },
@@ -88,13 +89,13 @@ export const updateAddress = tryCatch(
 export const changeDefaultBillingAddress = tryCatch(
   async (req: Request<{ id?: string }>, res: Response) => {
     const defaultBillingAddressId = req.params.id!;
-    const billingAddress = await prismaClient.address.findUniqueOrThrow({
+    const billingAddress = await prismaClient.address.findFirstOrThrow({
       where: { id: defaultBillingAddressId, deletedAt: null },
     });
     if (billingAddress.userId !== req.user.id) {
       return res
         .status(403)
-        .json({ message: "You are not authorized to use this address!" });
+        .json({ error: "You are not authorized to use this address!" });
     }
     const updatedUser = await prismaClient.user.update({
       where: { id: req.user.id, deletedAt: null },
@@ -116,7 +117,7 @@ export const changeDefaultShippingAddress = tryCatch(
     if (shippingAddress.userId !== req.user.id) {
       return res
         .status(403)
-        .json({ message: "You are not authorized to use this address!" });
+        .json({ error: "You are not authorized to use this address!" });
     }
 
     const updatedUser = await prismaClient.user.update({

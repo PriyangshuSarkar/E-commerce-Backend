@@ -6,12 +6,14 @@ import type {
   SignupRequest,
   UpdateUserRequest,
   DeleteUserRequest,
+  ChangeUserRoleRequest,
 } from "../types/user";
 import { prismaClient } from "../app";
 import { hashSync, compareSync } from "bcrypt";
 import { sign } from "jsonwebtoken";
 import {
   ChangePasswordSchema,
+  ChangeUserRoleSchema,
   DeleteUserSchema,
   LoginSchema,
   SignupSchema,
@@ -22,7 +24,7 @@ import {
 export const signup = tryCatch(
   async (req: Request<{}, {}, SignupRequest>, res: Response) => {
     const validatedData = SignupSchema.parse(req.body);
-    const user = await prismaClient.user.findUnique({
+    const user = await prismaClient.user.findFirst({
       where: { email: validatedData.email },
     });
 
@@ -62,7 +64,7 @@ export const signup = tryCatch(
 export const login = tryCatch(
   async (req: Request<{}, {}, LoginRequest>, res: Response) => {
     const validatedData = LoginSchema.parse(req.body);
-    const user = await prismaClient.user.findUnique({
+    const user = await prismaClient.user.findFirst({
       where: { email: validatedData.email, deletedAt: null },
     });
 
@@ -133,5 +135,141 @@ export const deleteUser = tryCatch(
     return res.status(201).json({
       message: `User ${req.user.name} of ID: ${req.user.id} is deleted, Successfully.`,
     });
+  }
+);
+
+// * Get All Users
+// !Admin Only
+export const getAllUsers = tryCatch(
+  async (
+    req: Request<{}, {}, {}, { page?: string; limit?: string }>,
+    res: Response
+  ) => {
+    const page = +req.query.page! || 1;
+    const limit = +req.query.limit! || 5;
+    if (page <= 0 || limit <= 0) {
+      return res
+        .status(400)
+        .json({ error: "Page and limit must be positive integers." });
+    }
+    const skip = (page - 1) * limit;
+
+    const userFilter = { deletedAt: null };
+
+    const [count, users] = await prismaClient.$transaction([
+      prismaClient.user.count({ where: userFilter }),
+      prismaClient.user.findMany({
+        skip,
+        take: limit,
+        where: userFilter,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(count / limit);
+    return res.status(200).json({
+      users,
+      currentPage: page,
+      totalPages,
+      totalCount: count,
+    });
+  }
+);
+
+// *Get User By ID
+// !Admin Only
+export const getUserById = tryCatch(
+  async (req: Request<{ id?: string }>, res: Response) => {
+    const user = await prismaClient.user.findFirstOrThrow({
+      where: { id: req.params.id, deletedAt: null },
+    });
+    return res.status(200).json({ user });
+  }
+);
+
+// * Search User
+// !Admin Only
+export const searchUser = tryCatch(
+  async (
+    req: Request<{}, {}, {}, { query?: string; page?: string; limit?: string }>,
+    res: Response
+  ) => {
+    const page = +req.query.page! || 1;
+    const limit = +req.query.limit! || 5;
+    if (page <= 0 || limit <= 0) {
+      return res
+        .status(400)
+        .json({ error: "Page and limit must be positive integers." });
+    }
+    const skip = (page - 1) * limit;
+
+    const searchQuery = req.query.query || "";
+
+    const [count, users] = await prismaClient.$transaction([
+      prismaClient.user.count({
+        where: {
+          OR: [
+            {
+              name: {
+                contains: searchQuery,
+              },
+            },
+            {
+              email: {
+                contains: searchQuery,
+              },
+            },
+          ],
+          deletedAt: null,
+        },
+      }),
+      prismaClient.user.findMany({
+        skip,
+        take: limit,
+        where: {
+          OR: [
+            {
+              name: {
+                contains: searchQuery,
+              },
+            },
+            {
+              email: {
+                contains: searchQuery,
+              },
+            },
+          ],
+          deletedAt: null,
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(count / limit);
+    return res.status(200).json({
+      users,
+      currentPage: page,
+      totalPages,
+      totalCount: count,
+    });
+  }
+);
+
+// *Change User Role
+// !Admin Only
+export const changeUserRole = tryCatch(
+  async (
+    req: Request<{ id?: string }, {}, ChangeUserRoleRequest>,
+    res: Response
+  ) => {
+    if (req.params.id === req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "Admins cannot change their own role." });
+    }
+    const validatedData = ChangeUserRoleSchema.parse(req.body);
+    const user = await prismaClient.user.update({
+      where: { id: req.params.id },
+      data: validatedData,
+    });
+    return res.status(200).json({ user });
   }
 );
