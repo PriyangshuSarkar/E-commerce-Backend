@@ -1,36 +1,29 @@
-export interface CreateProductRequest {
-  sku: string;
-  name: string;
-  description: string;
-  tags: string[];
-  price: string;
-  quantity: string;
-  categoryId: string;
-  stock: string;
-}
+import type { infer as infer_ } from "zod";
+import type {
+  AddCategorySchema,
+  CategoryIdSchema,
+  CreateProductSchema,
+  FilterAndSortProductsSchema,
+  PageAndLimitSchema,
+  ProductIdSchema,
+  SearchQuerySchema,
+  UpdateProductSchema,
+} from "../schemas/product";
 
-export interface UpdateProductRequest {
-  sku?: string;
-  name?: string;
-  description?: string;
-  tags?: string[];
-  price?: string;
-  quantity?: string;
-  categoryId?: string;
-  stock?: string;
-}
+export type CreateProductRequest = infer_<typeof CreateProductSchema>;
 
-export interface AddCategoryRequest {
-  category: string;
-}
+export type UpdateProductRequest = infer_<typeof UpdateProductSchema>;
 
-export interface FilterAndSortProductsRequest {
-  page?: string;
-  limit?: string;
-  category?: string;
-  tags?: string[];
-  minPrice?: string;
-  maxPrice?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-}
+export type AddCategoryRequest = infer_<typeof AddCategorySchema>;
+
+export type ProductIdRequest = infer_<typeof ProductIdSchema>;
+
+export type CategoryIdRequest = infer_<typeof CategoryIdSchema>;
+
+export type PageAndLimitRequest = infer_<typeof PageAndLimitSchema>;
+
+export type SearchQueryRequest = infer_<typeof SearchQuerySchema>;
+
+export type FilterAndSortProductsRequest = infer_<
+  typeof FilterAndSortProductsSchema
+>;

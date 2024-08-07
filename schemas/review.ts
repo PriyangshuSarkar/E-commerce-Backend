@@ -11,3 +11,16 @@ export const UpdateReviewSchema = object({
 }).refine((data) => data.rating !== undefined || data.comment !== undefined, {
   message: "At least one of rating or comment must be provided.",
 });
+
+export const ReviewIdSchema = object({
+  reviewId: string().optional(),
+});
+
+export const ProductIdSchema = object({
+  productId: string().optional(),
+});
+
+export const PageAndLimitSchema = object({
+  page: string().optional(),
+  limit: string().optional(),
+});

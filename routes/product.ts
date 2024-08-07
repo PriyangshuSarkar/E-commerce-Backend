@@ -5,6 +5,7 @@ import {
   deleteCategory,
   deleteProduct,
   filterAndSortProducts,
+  getAllCategories,
   getProductById,
   listProducts,
   searchProducts,
@@ -12,42 +13,46 @@ import {
 } from "../controllers/product";
 import { authMiddleware } from "../middlewares/auth";
 import { adminMiddleware } from "../middlewares/admin";
-import { singleUpload } from "../middlewares/multer";
+import { imageUpload } from "../middlewares/multer";
+import { attachFileData } from "../middlewares/attachFile";
 
 const productRoutes: Router = Router();
 
 productRoutes.post(
   "/new",
   [authMiddleware, adminMiddleware],
-  singleUpload.single("imageUrl"),
+  imageUpload.array("imageUrls", 5),
+  attachFileData,
   createProduct
 );
 
 productRoutes.put(
-  "/update/:id",
+  "/update/:productId",
   [authMiddleware, adminMiddleware],
-  singleUpload.single("imageUrl"),
+  imageUpload.array("imageUrls", 5),
+  attachFileData,
   updateProduct
 );
 
 productRoutes.delete(
-  "/delete/:id",
+  "/delete/:productId",
   [authMiddleware, adminMiddleware],
   deleteProduct
 );
 
-productRoutes.get("/get/all", authMiddleware, listProducts);
+productRoutes.get("/get/all", listProducts);
 
-productRoutes.get("/get/:id", authMiddleware, getProductById);
+productRoutes.get("/get/:productId", getProductById);
 
 productRoutes.post(
   "/category/add",
   [authMiddleware, adminMiddleware],
   addCategory
 );
+productRoutes.get("/category/all", getAllCategories);
 
 productRoutes.delete(
-  "/category/delete/:id",
+  "/category/delete/:categoryId",
   [authMiddleware, adminMiddleware],
   deleteCategory
 );

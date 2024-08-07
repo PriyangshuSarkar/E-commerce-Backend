@@ -13,22 +13,22 @@ const addressRoutes: Router = Router();
 
 addressRoutes.post("/add", authMiddleware, addAddress);
 
-addressRoutes.delete("/delete/:id", authMiddleware, deleteAddress);
+addressRoutes.delete("/delete/:addressId", authMiddleware, deleteAddress);
 
 addressRoutes.get("/all", authMiddleware, listAddress);
 
-addressRoutes.put("/update/:id", authMiddleware, updateAddress);
+addressRoutes.put("/update/:addressId", authMiddleware, updateAddress);
 
 addressRoutes.put(
-  "/shipping/default/:id",
+  "/shipping/:addressId/default",
   authMiddleware,
-  changeDefaultShippingAddress,
+  changeDefaultShippingAddress
 );
 
 addressRoutes.put(
-  "/billing/default/:id",
+  "/billing/:addressId/default",
   authMiddleware,
-  changeDefaultBillingAddress,
+  changeDefaultBillingAddress
 );
 
 export default addressRoutes;

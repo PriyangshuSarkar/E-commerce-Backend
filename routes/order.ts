@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import {
+  calculateOrderTotal,
   cancelOrder,
   createOrder,
   getAllOrders,
@@ -13,12 +14,19 @@ const orderRouter: Router = Router();
 
 orderRouter.post("/create", authMiddleware, createOrder);
 
-orderRouter.put("/update/:id", authMiddleware, adminMiddleware, updateOrder);
+orderRouter.get("/total", authMiddleware, calculateOrderTotal);
+
+orderRouter.put(
+  "/update/:orderId",
+  authMiddleware,
+  adminMiddleware,
+  updateOrder
+);
 
 orderRouter.get("/all", authMiddleware, getAllOrders);
 
-orderRouter.get("/get/:id", authMiddleware, getOrderById);
+orderRouter.get("/get/:orderId", authMiddleware, getOrderById);
 
-orderRouter.put("/cancel/:id", authMiddleware, cancelOrder);
+orderRouter.put("/cancel/:orderId", authMiddleware, cancelOrder);
 
 export default orderRouter;

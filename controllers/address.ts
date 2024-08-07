@@ -2,9 +2,11 @@ import type { Request, Response } from "express";
 import { tryCatch } from "../middlewares/tryCatch";
 import { AddAddressSchema, UpdateAddressSchema } from "../schemas/address";
 import { prismaClient } from "../app";
-import type { AddAddressRequest, UpdateAddressRequest } from "../types/address";
-import type { Address } from "@prisma/client";
-import type { error } from "winston";
+import type {
+  AddAddressRequest,
+  AddressIdRequest,
+  UpdateAddressRequest,
+} from "../types/address";
 
 // *AddNewAddress
 export const addAddress = tryCatch(
@@ -29,8 +31,8 @@ export const addAddress = tryCatch(
 
 // *DeleteAddress
 export const deleteAddress = tryCatch(
-  async (req: Request<{ id?: string }>, res: Response) => {
-    const addressId = req.params.id!;
+  async (req: Request<AddressIdRequest>, res: Response) => {
+    const addressId = req.params.addressId!;
     const { id: userId } = req.user;
     const address = await prismaClient.address.findFirstOrThrow({
       where: { id: addressId, deletedAt: null },
@@ -62,13 +64,13 @@ export const listAddress = tryCatch(async (req: Request, res: Response) => {
 // *Update Address
 export const updateAddress = tryCatch(
   async (
-    req: Request<{ id?: string }, {}, UpdateAddressRequest>,
+    req: Request<AddressIdRequest, {}, UpdateAddressRequest>,
     res: Response
   ) => {
     const validatedData = UpdateAddressSchema.parse(req.body);
     const existingAddressId = await prismaClient.address.findFirstOrThrow({
       where: {
-        id: req.params.id!,
+        id: req.params.addressId!,
         deletedAt: null,
       },
     });
@@ -78,7 +80,7 @@ export const updateAddress = tryCatch(
         .json({ error: "You are not authorized to delete this address!" });
     }
     const updateAddress = await prismaClient.address.update({
-      where: { id: req.params.id!, deletedAt: null },
+      where: { id: req.params.addressId!, deletedAt: null },
       data: validatedData,
     });
     return res.status(201).json({ updateAddress });
@@ -87,8 +89,8 @@ export const updateAddress = tryCatch(
 
 // *Changing default billing address
 export const changeDefaultBillingAddress = tryCatch(
-  async (req: Request<{ id?: string }>, res: Response) => {
-    const defaultBillingAddressId = req.params.id!;
+  async (req: Request<AddressIdRequest>, res: Response) => {
+    const defaultBillingAddressId = req.params.addressId!;
     const billingAddress = await prismaClient.address.findFirstOrThrow({
       where: { id: defaultBillingAddressId, deletedAt: null },
     });
@@ -107,8 +109,8 @@ export const changeDefaultBillingAddress = tryCatch(
 
 // *Changing default shipping address
 export const changeDefaultShippingAddress = tryCatch(
-  async (req: Request<{ id?: string }>, res: Response) => {
-    const defaultShippingAddressId = req.params.id!;
+  async (req: Request<AddressIdRequest>, res: Response) => {
+    const defaultShippingAddressId = req.params.addressId!;
 
     const shippingAddress = await prismaClient.address.findFirstOrThrow({
       where: { id: defaultShippingAddressId, deletedAt: null },

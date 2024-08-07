@@ -10,14 +10,14 @@ import {
 
 const reviewRoutes: Router = Router();
 
-reviewRoutes.post("/create/:id", authMiddleware, createReview);
+reviewRoutes.post("/create/:productId", authMiddleware, createReview);
 
-reviewRoutes.get("/get/product/:id", getReviewByProduct);
+reviewRoutes.get("/get/product/:productId", getReviewByProduct);
 
-reviewRoutes.get("/get/:id", getReviewById);
+reviewRoutes.get("/get/:reviewId", getReviewById);
 
-reviewRoutes.put("/update/:id", authMiddleware, updateReview);
+reviewRoutes.put("/update/:reviewId", authMiddleware, updateReview);
 
-reviewRoutes.delete("/delete/:id", authMiddleware, deleteReview);
+reviewRoutes.delete("/delete/:reviewId", authMiddleware, deleteReview);
 
 export default reviewRoutes;

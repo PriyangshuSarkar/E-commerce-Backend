@@ -1,4 +1,4 @@
-import { number, object, string } from "zod";
+import { object, string } from "zod";
 
 export const AddAddressSchema = object({
   lineOne: string(),
@@ -26,4 +26,8 @@ export const UpdateAddressSchema = object({
     throw new Error("At least one field must be provided for update.");
   }
   return data;
+});
+
+export const AddressIdSchema = object({
+  addressId: string().optional(),
 });

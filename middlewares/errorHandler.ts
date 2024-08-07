@@ -8,12 +8,6 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  if (req.file) {
-    unlink(req.file.path).catch((unlinkError) => {
-      console.error("Error deleting file:", unlinkError);
-    });
-  }
-
   console.error(err);
 
   let status = err.status || 500;
@@ -27,4 +21,29 @@ export const errorHandler = (
     message,
     error: err,
   });
+  // Clean up uploaded files if any
+  if (req.filePaths && req.filePaths.length > 0) {
+    cleanupFiles(req.filePaths).finally(() => {
+      res.status(status).json({
+        message,
+        error: err,
+      });
+    });
+  } else {
+    res.status(status).json({
+      message,
+      error: err,
+    });
+  }
 };
+
+// Function to clean up files
+async function cleanupFiles(filePaths: string[]) {
+  for (const filePath of filePaths) {
+    try {
+      await unlink(filePath);
+    } catch (error) {
+      console.error("Error deleting file:", error);
+    }
+  }
+}

@@ -8,21 +8,23 @@ import {
 } from "../schemas/product";
 import type {
   AddCategoryRequest,
+  CategoryIdRequest,
   CreateProductRequest,
   FilterAndSortProductsRequest,
+  PageAndLimitRequest,
+  ProductIdRequest,
+  SearchQueryRequest,
   UpdateProductRequest,
 } from "../types/product";
-import { error } from "winston";
 
 // *Create New Product
 // !Admin Only
 export const createProduct = tryCatch(
   async (req: Request<{}, {}, CreateProductRequest>, res: Response) => {
-    // console.log(req.body);
-    // console.log(req.file);
-    // throw error;
-    const imageUrl = req.file?.path;
-    const validatedData = CreateProductSchema.parse({ ...req.body, imageUrl });
+    const files = req.files as Express.Multer.File[] | undefined;
+    const imageUrls = files ? files.map((file) => file.path) : [];
+
+    const validatedData = CreateProductSchema.parse({ ...req.body, imageUrls });
 
     const product = await prismaClient.product.create({
       data: {
@@ -30,7 +32,6 @@ export const createProduct = tryCatch(
         description: validatedData.description,
         categoryId: validatedData.categoryId,
         price: validatedData.price,
-        imageUrl: validatedData.imageUrl,
         stock: validatedData.stock,
         sku: validatedData.sku,
         tags: {
@@ -39,8 +40,11 @@ export const createProduct = tryCatch(
             create: { name: tags },
           })),
         },
+        images: {
+          create: validatedData.imageUrls?.map((url) => ({ url })),
+        },
       },
-      include: { tags: true },
+      include: { tags: true, images: true, category: true },
     });
     return res.status(201).json({ product });
   }
@@ -50,36 +54,49 @@ export const createProduct = tryCatch(
 // !Admin Only
 export const updateProduct = tryCatch(
   async (
-    req: Request<{ id?: string }, {}, UpdateProductRequest>,
+    req: Request<ProductIdRequest, {}, UpdateProductRequest>,
     res: Response
   ) => {
-    const imageUrl = req.file?.path;
-    const validatedData = UpdateProductSchema.parse({ ...req.body, imageUrl });
+    if (!req.params.productId) {
+      return res.status(400).json({ error: "Product ID Invalid" });
+    }
+
+    const files = req.files as Express.Multer.File[] | undefined;
+    const imageUrls = files ? files.map((file) => file.path) : [];
+
+    const validatedData = UpdateProductSchema.parse({ ...req.body, imageUrls });
 
     const updateData: any = {
       name: validatedData.name,
       description: validatedData.description,
       categoryId: validatedData.categoryId,
       price: validatedData.price,
-      imageUrl: validatedData.imageUrl,
       stock: validatedData.stock,
       sku: validatedData.sku,
+      images: {
+        deleteMany: validatedData.removeImageUrls?.length
+          ? {
+              id: { in: validatedData.removeImageUrls },
+            }
+          : undefined,
+        create: validatedData.imageUrls?.map((url) => ({ url })),
+      },
+      tags: {
+        disconnect:
+          validatedData.removeTags?.map((tag: string) => ({
+            name: tag,
+          })) || [],
+        connect:
+          validatedData.tags?.map((tag: string) => ({
+            name: tag,
+          })) || [],
+      },
     };
 
-    if (validatedData.tags) {
-      updateData.tags = {
-        connectOrCreate: validatedData.tags.map((tags: string) => ({
-          where: { name: tags },
-          create: { name: tags },
-        })),
-      };
-    }
-    // Update the product
     const updatedProduct = await prismaClient.product.update({
-      where: { id: req.params.id!, deletedAt: null },
-
+      where: { id: req.params.productId!, deletedAt: null },
       data: updateData,
-      include: { tags: true },
+      include: { tags: true, images: true, category: true },
     });
 
     return res.status(200).json({ updatedProduct });
@@ -89,8 +106,8 @@ export const updateProduct = tryCatch(
 // *Delete Product
 // !Admin Only
 export const deleteProduct = tryCatch(
-  async (req: Request<{ id?: string }>, res: Response) => {
-    const id = req.params.id!;
+  async (req: Request<ProductIdRequest>, res: Response) => {
+    const id = req.params.productId!;
     const existingProduct = await prismaClient.product.findFirstOrThrow({
       where: { id, deletedAt: null },
     });
@@ -106,10 +123,7 @@ export const deleteProduct = tryCatch(
 
 // *ListAllProducts
 export const listProducts = tryCatch(
-  async (
-    req: Request<{}, {}, {}, { page?: string; limit?: string }>,
-    res: Response
-  ) => {
+  async (req: Request<{}, {}, {}, PageAndLimitRequest>, res: Response) => {
     const page = +req.query.page! || 1;
     const limit = +req.query.limit! || 5;
     if (page <= 0 || limit <= 0) {
@@ -125,6 +139,7 @@ export const listProducts = tryCatch(
         skip,
         take: limit,
         where: { deletedAt: null },
+        include: { category: true, tags: true, images: true },
       }),
     ]);
     const totalPages = Math.ceil(count / limit);
@@ -139,11 +154,12 @@ export const listProducts = tryCatch(
 
 // *GetProductById
 export const getProductById = tryCatch(
-  async (req: Request<{ id?: string }>, res: Response) => {
-    const id = req.params.id!;
+  async (req: Request<ProductIdRequest>, res: Response) => {
+    const id = req.params.productId!;
 
     const existingProduct = await prismaClient.product.findFirstOrThrow({
       where: { id, deletedAt: null },
+      include: { category: true, tags: true, images: true },
     });
     return res.status(200).json({ existingProduct });
   }
@@ -158,26 +174,33 @@ export const addCategory = tryCatch(
       where: { name: validatedData.category },
     });
     if (existingCategory) {
-      return res.status(400).json({ error: "Category already exists" });
+      return res.status(200).json({ existingCategory });
     }
     const newCategory = await prismaClient.category.create({
       data: { name: validatedData.category },
     });
-    return res
-      .status(200)
-      .json({ message: `Category ${validatedData.category} is created` });
+    return res.status(200).json({ newCategory });
   }
 );
 
-// *Delete Product
+// *Add Category
+// !Admin Only
+export const getAllCategories = tryCatch(
+  async (req: Request, res: Response) => {
+    const allCategories = await prismaClient.category.findMany({});
+    return res.status(200).json({ allCategories });
+  }
+);
+
+// *Delete Category
 // !Admin Only
 export const deleteCategory = tryCatch(
-  async (req: Request<{ id?: string }>, res: Response) => {
+  async (req: Request<CategoryIdRequest>, res: Response) => {
     const existingCategory = await prismaClient.category.findFirst({
-      where: { id: req.params.id },
+      where: { id: req.params.categoryId },
     });
     await prismaClient.category.delete({
-      where: { id: req.params.id },
+      where: { id: req.params.categoryId },
     });
     return res
       .status(200)
@@ -187,10 +210,7 @@ export const deleteCategory = tryCatch(
 
 // *Search Products
 export const searchProducts = tryCatch(
-  async (
-    req: Request<{}, {}, {}, { query?: string; page?: string; limit?: string }>,
-    res: Response
-  ) => {
+  async (req: Request<{}, {}, {}, SearchQueryRequest>, res: Response) => {
     const page = +req.query.page! || 1;
     const limit = +req.query.limit! || 5;
     if (page <= 0 || limit <= 0) {
@@ -241,6 +261,7 @@ export const searchProducts = tryCatch(
         include: {
           category: true,
           tags: true,
+          images: true,
         },
       }),
     ]);
@@ -302,6 +323,7 @@ export const filterAndSortProducts = tryCatch(
         include: {
           category: true,
           tags: true,
+          images: true,
         },
       }),
     ]);

@@ -35,3 +35,18 @@ export const DeleteUserSchema = object({
 export const ChangeUserRoleSchema = object({
   role: enum_(["ADMIN", "USER"]),
 });
+
+export const PageAndLimitSchema = object({
+  page: string().optional(),
+  limit: string().optional(),
+});
+
+export const UserIdSchema = object({
+  userId: string().optional(),
+});
+
+export const SearchQuerySchema = object({
+  query: string().optional(),
+  page: string().optional(),
+  limit: string().optional(),
+});

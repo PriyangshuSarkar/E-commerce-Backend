@@ -30,9 +30,9 @@ userRoutes.delete("/delete", authMiddleware, deleteUser);
 
 userRoutes.get("/all", [authMiddleware, adminMiddleware], getAllUsers);
 
-userRoutes.get("/:id", [authMiddleware, adminMiddleware], getUserById);
+userRoutes.get("/:userId", [authMiddleware, adminMiddleware], getUserById);
 
-userRoutes.put("/:id", [authMiddleware, adminMiddleware], changeUserRole);
+userRoutes.put("/:userId", [authMiddleware, adminMiddleware], changeUserRole);
 
 userRoutes.get("/search/fuzzy", [authMiddleware, adminMiddleware], searchUser);
 

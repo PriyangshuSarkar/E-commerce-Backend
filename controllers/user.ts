@@ -7,6 +7,9 @@ import type {
   UpdateUserRequest,
   DeleteUserRequest,
   ChangeUserRoleRequest,
+  PageAndLimitRequest,
+  UserIdRequest,
+  SearchQueryRequest,
 } from "../types/user";
 import { prismaClient } from "../app";
 import { hashSync, compareSync } from "bcrypt";
@@ -88,7 +91,15 @@ export const login = tryCatch(
 
 // *Me Route
 export const me = tryCatch(async (req: Request, res: Response) => {
-  return res.status(200).json(req.user);
+  const user = await prismaClient.user.findFirstOrThrow({
+    where: { id: req.user.id },
+    include: {
+      addresses: true,
+      orders: true,
+      reviews: true,
+    },
+  });
+  return res.status(200).json(user);
 });
 
 // *Change Password Route
@@ -141,10 +152,7 @@ export const deleteUser = tryCatch(
 // * Get All Users
 // !Admin Only
 export const getAllUsers = tryCatch(
-  async (
-    req: Request<{}, {}, {}, { page?: string; limit?: string }>,
-    res: Response
-  ) => {
+  async (req: Request<{}, {}, {}, PageAndLimitRequest>, res: Response) => {
     const page = +req.query.page! || 1;
     const limit = +req.query.limit! || 5;
     if (page <= 0 || limit <= 0) {
@@ -178,9 +186,9 @@ export const getAllUsers = tryCatch(
 // *Get User By ID
 // !Admin Only
 export const getUserById = tryCatch(
-  async (req: Request<{ id?: string }>, res: Response) => {
+  async (req: Request<UserIdRequest>, res: Response) => {
     const user = await prismaClient.user.findFirstOrThrow({
-      where: { id: req.params.id, deletedAt: null },
+      where: { id: req.params.userId, deletedAt: null },
     });
     return res.status(200).json({ user });
   }
@@ -189,10 +197,7 @@ export const getUserById = tryCatch(
 // * Search User
 // !Admin Only
 export const searchUser = tryCatch(
-  async (
-    req: Request<{}, {}, {}, { query?: string; page?: string; limit?: string }>,
-    res: Response
-  ) => {
+  async (req: Request<{}, {}, {}, SearchQueryRequest>, res: Response) => {
     const page = +req.query.page! || 1;
     const limit = +req.query.limit! || 5;
     if (page <= 0 || limit <= 0) {
@@ -257,17 +262,17 @@ export const searchUser = tryCatch(
 // !Admin Only
 export const changeUserRole = tryCatch(
   async (
-    req: Request<{ id?: string }, {}, ChangeUserRoleRequest>,
+    req: Request<UserIdRequest, {}, ChangeUserRoleRequest>,
     res: Response
   ) => {
-    if (req.params.id === req.user.id) {
+    if (req.params.userId === req.user.id) {
       return res
         .status(403)
         .json({ message: "Admins cannot change their own role." });
     }
     const validatedData = ChangeUserRoleSchema.parse(req.body);
     const user = await prismaClient.user.update({
-      where: { id: req.params.id },
+      where: { id: req.params.userId },
       data: validatedData,
     });
     return res.status(200).json({ user });

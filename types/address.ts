@@ -1,17 +1,12 @@
-export interface AddAddressRequest {
-  lineOne: string;
-  lineTwo?: string;
-  city: string;
-  country: string;
-  pincode: string;
-  phone: string;
-}
+import type { infer as infer_ } from "zod";
+import {
+  AddAddressSchema,
+  AddressIdSchema,
+  UpdateAddressSchema,
+} from "../schemas/address";
 
-export interface UpdateAddressRequest {
-  lineOne?: string;
-  lineTwo?: string;
-  city?: string;
-  country?: string;
-  pincode?: string;
-  phone?: string;
-}
+export type AddAddressRequest = infer_<typeof AddAddressSchema>;
+
+export type UpdateAddressRequest = infer_<typeof UpdateAddressSchema>;
+
+export type AddressIdRequest = infer_<typeof AddressIdSchema>;

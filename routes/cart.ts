@@ -1,20 +1,24 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import {
-  addToCart,
   getCart,
   removeFromCart,
-  updateCartItemQuantity,
+  setCartItemQuantity,
+  updateCartItemQuantityByValue,
 } from "../controllers/cart";
 
 const cartRouter: Router = Router();
 
 cartRouter.get("/get", authMiddleware, getCart);
 
-cartRouter.post("/add/:id", authMiddleware, addToCart);
+cartRouter.delete("/remove/:cartItemId", authMiddleware, removeFromCart);
 
-cartRouter.delete("/remove/:id", authMiddleware, removeFromCart);
+cartRouter.post("/update/:productId", authMiddleware, setCartItemQuantity);
 
-cartRouter.put("/update/:id", authMiddleware, updateCartItemQuantity);
+cartRouter.post(
+  "/change/:productId",
+  authMiddleware,
+  updateCartItemQuantityByValue
+);
 
 export default cartRouter;
