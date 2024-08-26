@@ -14,29 +14,52 @@ export const getCart = tryCatch(async (req: Request, res: Response) => {
     include: {
       items: {
         include: {
-          product: true,
+          productVariant: {
+            include: {
+              product: true,
+            },
+          },
         },
         where: {
-          product: {
+          productVariant: {
             deletedAt: null,
           },
         },
       },
     },
   });
-  const adjustedItems = cart.items.map((item) => {
-    const adjustedQuantity =
-      item.quantity > item.product.stock ? item.product.stock : item.quantity;
-    return {
-      ...item,
-      quantity: adjustedQuantity,
-    };
-  });
-  const adjustedCart = {
+  // Adjust quantities and update in database
+  const updatedCartItems = await Promise.all(
+    cart.items.map(async (item) => {
+      const adjustedQuantity =
+        item.quantity > item.productVariant.stock
+          ? item.productVariant.stock
+          : item.quantity;
+
+      // Update the cart item with the adjusted quantity
+      if (adjustedQuantity !== item.quantity) {
+        await prismaClient.cartItem.update({
+          where: {
+            id: item.id,
+          },
+          data: {
+            quantity: adjustedQuantity,
+          },
+        });
+      }
+
+      // Return the updated cart item
+      return {
+        ...item,
+        quantity: adjustedQuantity,
+      };
+    })
+  );
+
+  return res.status(200).json({
     ...cart,
-    items: adjustedItems,
-  };
-  return res.status(200).json({ cart });
+    items: updatedCartItems,
+  });
 });
 
 // *Remove Item from Cart
@@ -72,24 +95,24 @@ export const setCartItemQuantity = tryCatch(
     req: Request<ProductIdRequest, {}, {}, ProductQuantityRequest>,
     res: Response
   ) => {
-    const productId = req.params.productId!;
+    const productId = req.params.productVariantId!;
     let quantity = +req.query.productQuantity!;
 
-    if (!productId) {
-      return res.status(400).json({ error: "Invalid productId" });
-    }
-    if (isNaN(quantity)) {
-      return res.status(400).json({ error: "Invalid quantity" });
+    if (!productId || isNaN(quantity)) {
+      return res.status(400).json({ error: "Invalid productId or quantity" });
     }
 
-    const product = await prismaClient.product.findFirstOrThrow({
-      where: { id: productId, deletedAt: null },
+    const productVariant = await prismaClient.productVariant.findFirstOrThrow({
+      where: {
+        productId: productId,
+        deletedAt: null,
+      },
     });
 
     // Ensure quantity is within stock limits
-    quantity = Math.min(Math.max(quantity, 0), product.stock);
+    quantity = Math.min(Math.max(quantity, 0), productVariant.stock);
 
-    let cart = await prismaClient.cart.findFirst({
+    let cart = await prismaClient.cart.findUnique({
       where: { userId: req.user.id },
     });
 
@@ -99,10 +122,12 @@ export const setCartItemQuantity = tryCatch(
       });
     }
 
-    const cartItem = await prismaClient.cartItem.findFirst({
+    const cartItem = await prismaClient.cartItem.findUnique({
       where: {
-        cartId: cart.id,
-        productId,
+        cartId_productVariantId: {
+          cartId: cart.id,
+          productVariantId: productVariant.id,
+        },
       },
     });
 
@@ -110,9 +135,9 @@ export const setCartItemQuantity = tryCatch(
       if (cartItem) {
         await prismaClient.cartItem.delete({
           where: {
-            cartId_productId: {
+            cartId_productVariantId: {
               cartId: cart.id,
-              productId,
+              productVariantId: productVariant.id,
             },
           },
         });
@@ -123,9 +148,9 @@ export const setCartItemQuantity = tryCatch(
       const newCartItem = cartItem
         ? await prismaClient.cartItem.update({
             where: {
-              cartId_productId: {
+              cartId_productVariantId: {
                 cartId: cart.id,
-                productId,
+                productVariantId: productVariant.id,
               },
             },
             data: {
@@ -135,7 +160,7 @@ export const setCartItemQuantity = tryCatch(
         : await prismaClient.cartItem.create({
             data: {
               cartId: cart.id,
-              productId,
+              productVariantId: productVariant.id,
               quantity,
             },
           });
@@ -150,21 +175,23 @@ export const updateCartItemQuantityByValue = tryCatch(
     req: Request<ProductIdRequest, {}, {}, ProductQuantityRequest>,
     res: Response
   ) => {
-    const productId = req.params.productId!;
+    const productId = req.params.productVariantId!;
     let quantityChange = +req.query.productQuantityChange!;
 
-    if (!productId) {
-      return res.status(400).json({ error: "Invalid productId" });
-    }
-    if (isNaN(quantityChange)) {
-      return res.status(400).json({ error: "Invalid quantity change" });
+    if (!productId || isNaN(quantityChange)) {
+      return res
+        .status(400)
+        .json({ error: "Invalid productId or quantity change" });
     }
 
-    const product = await prismaClient.product.findFirstOrThrow({
-      where: { id: productId, deletedAt: null },
+    const productVariant = await prismaClient.productVariant.findFirstOrThrow({
+      where: {
+        productId: productId,
+        deletedAt: null,
+      },
     });
 
-    let cart = await prismaClient.cart.findFirst({
+    let cart = await prismaClient.cart.findUnique({
       where: { userId: req.user.id },
     });
 
@@ -174,10 +201,12 @@ export const updateCartItemQuantityByValue = tryCatch(
       });
     }
 
-    const cartItem = await prismaClient.cartItem.findFirst({
+    const cartItem = await prismaClient.cartItem.findUnique({
       where: {
-        cartId: cart.id,
-        productId,
+        cartId_productVariantId: {
+          cartId: cart.id,
+          productVariantId: productVariant.id,
+        },
       },
     });
 
@@ -185,15 +214,15 @@ export const updateCartItemQuantityByValue = tryCatch(
     let newQuantity = currentQuantity + quantityChange;
 
     // Ensure new quantity is within valid range
-    newQuantity = Math.min(Math.max(newQuantity, 0), product.stock);
+    newQuantity = Math.min(Math.max(newQuantity, 0), productVariant.stock);
 
     if (newQuantity === 0) {
       if (cartItem) {
         await prismaClient.cartItem.delete({
           where: {
-            cartId_productId: {
+            cartId_productVariantId: {
               cartId: cart.id,
-              productId,
+              productVariantId: productVariant.id,
             },
           },
         });
@@ -204,9 +233,9 @@ export const updateCartItemQuantityByValue = tryCatch(
       const updatedCartItem = cartItem
         ? await prismaClient.cartItem.update({
             where: {
-              cartId_productId: {
+              cartId_productVariantId: {
                 cartId: cart.id,
-                productId,
+                productVariantId: productVariant.id,
               },
             },
             data: {
@@ -216,7 +245,7 @@ export const updateCartItemQuantityByValue = tryCatch(
         : await prismaClient.cartItem.create({
             data: {
               cartId: cart.id,
-              productId,
+              productVariantId: productVariant.id,
               quantity: newQuantity,
             },
           });

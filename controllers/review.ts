@@ -16,16 +16,17 @@ export const createReview = tryCatch(
     req: Request<ProductIdRequest, {}, CreateReviewRequest>,
     res: Response
   ) => {
-    if (!req.params.productId) {
-      return res
-        .status(400)
-        .json({ error: "Please provide a valid product ID!" });
+    const product = await prismaClient.product.findUnique({
+      where: { id: req.params.productId },
+    });
+    if (!product) {
+      return res.status(404).json({ error: "Product not found!" });
     }
     const validatedData = CreateReviewSchema.parse(req.body);
     const newReview = await prismaClient.review.create({
       data: {
         userId: req.user.id,
-        productId: req.params.productId,
+        productId: product.id,
         rating: validatedData.rating,
         comment: validatedData.comment,
       },
@@ -49,13 +50,14 @@ export const getReviewByProduct = tryCatch(
     }
     const skip = (page - 1) * limit;
 
-    if (!req.params.productId) {
-      return res
-        .status(400)
-        .json({ error: "Please provide a valid product ID!" });
+    const product = await prismaClient.product.findUnique({
+      where: { id: req.params.productId },
+    });
+    if (!product) {
+      return res.status(404).json({ error: "Product not found!" });
     }
 
-    const reviewFilter = { productId: req.params.productId, deletedAt: null };
+    const reviewFilter = { productId: product.id, deletedAt: null };
 
     const [count, reviews] = await prismaClient.$transaction([
       prismaClient.review.count({ where: reviewFilter }),

@@ -12,15 +12,28 @@ import type {
 export const addAddress = tryCatch(
   async (req: Request<{}, {}, AddAddressRequest>, res: Response) => {
     const validatedData = AddAddressSchema.parse(req.body);
-    const { lineOne, lineTwo, city, country, pincode, phone } = validatedData;
+    const {
+      name,
+      lineOne,
+      lineTwo,
+      city,
+      state,
+      country,
+      pincode,
+      email,
+      phone,
+    } = validatedData;
     const { id: userId } = req.user;
     const address = await prismaClient.address.create({
       data: {
+        name,
         lineOne,
         ...(lineTwo && { lineTwo }),
         city,
+        state,
         country,
         pincode,
+        email,
         phone,
         userId,
       },
@@ -123,7 +136,7 @@ export const changeDefaultShippingAddress = tryCatch(
     }
 
     const updatedUser = await prismaClient.user.update({
-      where: { id: req.user.id },
+      where: { id: req.user.id, deletedAt: null },
       data: { defaultShippingAddressId, deletedAt: null },
     });
 

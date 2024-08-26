@@ -1,14 +1,17 @@
-import type { Request, Response } from "express";
+import { type Request, type Response } from "express";
 import { tryCatch } from "../middlewares/tryCatch";
 import type {
   CartItemWithProduct,
   CreateOrderRequest,
   OrderIdRequest,
   PageAndLimitRequest,
+  PaymentVerificationRequest,
   UpdateOrderRequest,
 } from "../types/order";
 import { CreateOrderSchema, UpdateOrderSchema } from "../schemas/order";
 import { prismaClient } from "../app";
+import { razorpay } from "../utils/razorpay";
+import crypto from "crypto";
 
 // *Calculate Total Order Amount
 export const calculateOrderTotal = tryCatch(
@@ -18,7 +21,11 @@ export const calculateOrderTotal = tryCatch(
       include: {
         items: {
           include: {
-            product: true,
+            productVariant: {
+              include: {
+                product: true,
+              },
+            },
           },
         },
       },
@@ -46,12 +53,12 @@ const calculateTotalAmount = (
   shippingCharge: number
 ) => {
   const itemSubtotals = cartItems.map((item) => {
-    const subtotal = item.quantity * +item.product.price;
+    const subtotal = item.quantity * +item.productVariant.price; // Updated to use productVariant.price
     return {
-      productId: item.productId,
-      name: item.product.name,
+      productId: item.productVariant.productId, // Updated to use productVariant.productId
+      name: item.productVariant.product.name, // Updated to use productVariant.product.name
       quantity: item.quantity,
-      price: +item.product.price,
+      price: +item.productVariant.price, // Updated to use productVariant.price
       subtotal,
     };
   });
@@ -76,13 +83,16 @@ const calculateTotalAmount = (
 export const createOrder = tryCatch(
   async (req: Request<{}, {}, CreateOrderRequest>, res: Response) => {
     const validatedData = CreateOrderSchema.parse(req.body);
-
     const cart = await prismaClient.cart.findFirst({
       where: { userId: req.user.id },
       include: {
         items: {
           include: {
-            product: true,
+            productVariant: {
+              include: {
+                product: true,
+              },
+            },
           },
         },
       },
@@ -99,44 +109,123 @@ export const createOrder = tryCatch(
       shippingCharge
     );
 
+    const options = {
+      amount: Math.round(100 * totalAmountDetails.totalAmount),
+      currency: "INR",
+    };
+    // Create Razorpay order
+    const razorpayOrder = await razorpay.orders.create(options);
+
     const orderDetails = await prismaClient.$transaction(async (prisma) => {
+      // Decrease product stock inside the transaction
       await Promise.all(
-        cart.items.map(async (item) => {
-          await prisma.product.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                decrement: item.quantity,
+        cart.items.map(
+          async (item) =>
+            await prisma.productVariant.update({
+              where: { id: item.productVariant.id }, // Updated to use productVariant.id
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
               },
-            },
-          });
-        })
+            })
+        )
       );
-      const order = await prisma.order.create({
+
+      // Create the order in the database
+      return prisma.order.create({
         data: {
+          razorpayId: razorpayOrder.id,
           userId: req.user.id,
           shippingAddressId: validatedData.shippingAddressId,
           billingAddressId: validatedData.billingAddressId,
           totalAmount: totalAmountDetails.totalAmount,
-          status: validatedData.status,
+          status: "PENDING",
+          payment: "DUE",
           items: {
             create: cart.items.map((item) => ({
-              productId: item.productId,
+              productVariantId: item.productVariant.id, // Updated to use productVariant.id
               quantity: item.quantity,
-              price: item.product.price,
+              price: item.productVariant.price, // Updated to use productVariant.price
             })),
           },
         },
       });
-      await prisma.cartItem.deleteMany({
-        where: { cartId: cart.id },
-      });
-
-      return order;
     });
-    return res.status(200).json({ orderDetails });
+
+    return res.status(200).json({ razorpayOrder, orderDetails });
   }
 );
+
+// *Validate Payment
+export const paymentVerification = async (
+  req: Request<{}, {}, PaymentVerificationRequest>,
+  res: Response
+) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
+
+  const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_API_SECRETS!)
+    .update(body.toString())
+    .digest("hex");
+
+  if (expectedSignature === razorpay_signature) {
+    const updatedOrder = await prismaClient.order.update({
+      where: { razorpayId: razorpay_order_id, userId: req.user.id },
+      data: { payment: "SUCCESSFUL" },
+      include: {
+        items: {
+          include: {
+            productVariant: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const cart = await prismaClient.cart.findFirst({
+      where: { userId: req.user.id },
+    });
+    await prismaClient.cartItem.deleteMany({
+      where: { cartId: cart?.id }, // Assuming cartId is the userId
+    });
+
+    return res.status(200).json({ signatureIsValid: true, updatedOrder });
+  } else {
+    // Handle failed payment
+    await prismaClient.$transaction(async (prisma) => {
+      // Update order status to FAILED
+      const order = await prisma.order.update({
+        where: { razorpayId: razorpay_order_id, userId: req.user.id },
+        data: { payment: "FAILED" },
+        include: { items: true },
+      });
+
+      if (order) {
+        await Promise.all(
+          order.items.map(
+            async (item) =>
+              await prisma.productVariant.update({
+                where: { id: item.productVariantId }, // Updated to use productVariantId
+                data: {
+                  stock: {
+                    increment: item.quantity,
+                  },
+                },
+              })
+          )
+        );
+      }
+    });
+    return res.status(400).json({ signatureIsValid: false });
+  }
+};
 
 // *Update Order
 // !Admin Only
@@ -183,7 +272,15 @@ export const getAllOrders = tryCatch(
         take: limit,
         where: orderFilter,
         include: {
-          items: true,
+          items: {
+            include: {
+              productVariant: {
+                include: {
+                  product: true, // Include related product details if needed
+                },
+              },
+            },
+          },
           shippingAddress: true,
           billingAddress: true,
           user: true,
@@ -204,24 +301,22 @@ export const getAllOrders = tryCatch(
 // *Get Order By ID
 // !Admin Only or Order Owner
 export const getOrderById = tryCatch(
-  async (
-    req: Request<OrderIdRequest, {}, {}, PageAndLimitRequest>,
-    res: Response
-  ) => {
-    const page = +req.query.page! || 1;
-    const limit = +req.query.limit! || 5;
-    if (page <= 0 || limit <= 0) {
-      return res
-        .status(400)
-        .json({ error: "Page and limit must be positive integers." });
-    }
+  async (req: Request<OrderIdRequest, {}, {}>, res: Response) => {
     const order = await prismaClient.order.findFirstOrThrow({
       where:
         req.user.role !== "ADMIN"
           ? { id: req.params.orderId, userId: req.user.id }
           : { id: req.params.orderId },
       include: {
-        items: true,
+        items: {
+          include: {
+            productVariant: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
         shippingAddress: true,
         billingAddress: true,
         user: true,
@@ -246,18 +341,26 @@ export const cancelOrder = tryCatch(
       return res.status(400).json({ error: "Order is already cancelled." });
     }
 
+    const refundOptions = {
+      amount: undefined,
+      speed: "normal" as "normal" | "optimum" | undefined,
+      notes: undefined,
+      receipt: undefined,
+    };
+
     const updatedOrder = await prismaClient.$transaction(async (prisma) => {
+      await razorpay.payments.refund(order.razorpayId, refundOptions);
       const cancelledOrder = await prisma.order.update({
         where:
           req.user.role !== "ADMIN"
             ? { id: req.params.orderId, userId: req.user.id }
             : { id: req.params.orderId },
-        data: { status: "CANCELLED" },
+        data: { status: "CANCELLED", payment: "REFUNDED" },
       });
       await Promise.all(
         order.items.map(async (item) => {
-          await prisma.product.update({
-            where: { id: item.productId },
+          await prisma.productVariant.update({
+            where: { id: item.productVariantId }, // Updated to use productVariantId
             data: {
               stock: {
                 increment: item.quantity,

@@ -9,6 +9,7 @@
 
 generator client {
   provider        = "prisma-client-js"
+  binaryTargets   = ["native", "debian-openssl-1.1.x"]
   previewFeatures = ["fullTextSearch", "fullTextIndex"]
 }
 
@@ -30,8 +31,15 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  DUE
+  FAILED
+  SUCCESSFUL
+  REFUNDED
+}
+
 model User {
-  id                       String    @id @default(cuid())
+  id                       String    @id @default(uuid())
   name                     String
   email                    String    @unique
   password                 String
@@ -51,12 +59,15 @@ model User {
 }
 
 model Address {
-  id             String    @id @default(cuid())
+  id             String    @id @default(uuid())
+  name           String
   lineOne        String
   lineTwo        String?
   city           String
-  country        String
   pincode        String
+  state          String
+  country        String
+  email          String
   phone          String
   userId         String
   user           User      @relation(fields: [userId], references: [id])
@@ -70,7 +81,7 @@ model Address {
 }
 
 model Category {
-  id       String    @id @default(cuid())
+  id       String    @id @default(uuid())
   name     String    @unique
   products Product[]
 
@@ -79,7 +90,7 @@ model Category {
 }
 
 model Tag {
-  id       String    @id @default(cuid())
+  id       String    @id @default(uuid())
   name     String    @unique
   products Product[]
 
@@ -88,29 +99,43 @@ model Tag {
 }
 
 model Product {
-  id          String         @id @default(cuid())
-  sku         String         @unique
+  id          String           @id @default(uuid())
   name        String
-  description String         @db.Text
+  description String           @db.Text
   categoryId  String
-  category    Category       @relation(fields: [categoryId], references: [id])
+  category    Category         @relation(fields: [categoryId], references: [id])
   tags        Tag[]
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
   reviews     Review[]
   images      ProductImage[]
-  price       Decimal
-  stock       Int            @default(0)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  variants    ProductVariant[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   deletedAt   DateTime?
 
   @@fulltext([name, description])
   @@map("products")
 }
 
+model ProductVariant {
+  id        String      @id @default(uuid())
+  sku       String      @unique
+  productId String
+  product   Product     @relation(fields: [productId], references: [id])
+  size      String
+  price     Decimal
+  stock     Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  deletedAt DateTime?
+  cartItem  CartItem[]
+  orderItem OrderItem[]
+
+  @@unique([productId, size])
+  @@map("product_variants")
+}
+
 model ProductImage {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   url       String
   productId String
   product   Product  @relation(fields: [productId], references: [id])
@@ -121,7 +146,7 @@ model ProductImage {
 }
 
 model Cart {
-  id        String     @id @default(cuid())
+  id        String     @id @default(uuid())
   userId    String     @unique
   user      User       @relation(fields: [userId], references: [id])
   items     CartItem[]
@@ -132,53 +157,55 @@ model Cart {
 }
 
 model CartItem {
-  id        String   @id @default(cuid())
-  cartId    String
-  cart      Cart     @relation(fields: [cartId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String         @id @default(uuid())
+  cartId           String
+  cart             Cart           @relation(fields: [cartId], references: [id])
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  quantity         Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
-  @@unique([cartId, productId])
+  @@unique([cartId, productVariantId])
   @@map("cart_items")
 }
 
 model Order {
-  id                String      @id @default(cuid())
+  id                String        @id @default(uuid())
+  razorpayId        String        @unique
   userId            String
-  user              User        @relation(fields: [userId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
   items             OrderItem[]
   totalAmount       Decimal
-  status            OrderStatus
+  status            OrderStatus   @default(PENDING)
+  payment           PaymentStatus @default(DUE)
   shippingAddressId String
   billingAddressId  String
-  shippingAddress   Address     @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
-  billingAddress    Address     @relation("BillingAddress", fields: [billingAddressId], references: [id])
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  shippingAddress   Address       @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  billingAddress    Address       @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
   deletedAt         DateTime?
 
   @@map("orders")
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int
-  price     Decimal
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String         @id @default(uuid())
+  orderId          String
+  order            Order          @relation(fields: [orderId], references: [id])
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  quantity         Int
+  price            Decimal
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   @@map("order_items")
 }
 
 model Review {
-  id        String    @id @default(cuid())
+  id        String    @id @default(uuid())
   userId    String
   user      User      @relation(fields: [userId], references: [id])
   productId String

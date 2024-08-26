@@ -4,11 +4,16 @@ import type {
   CreateOrderSchema,
   OrderIdSchema,
   PageAndLimitSchema,
+  PaymentVerificationSchema,
   ProductWithPriceSchema,
   UpdateOrderSchema,
 } from "../schemas/order";
 
 export type CreateOrderRequest = infer_<typeof CreateOrderSchema>;
+
+export type PaymentVerificationRequest = infer_<
+  typeof PaymentVerificationSchema
+>;
 
 export type UpdateOrderRequest = infer_<typeof UpdateOrderSchema>;
 

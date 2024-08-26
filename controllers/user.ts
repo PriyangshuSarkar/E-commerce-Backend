@@ -12,7 +12,7 @@ import type {
   SearchQueryRequest,
 } from "../types/user";
 import { prismaClient } from "../app";
-import { hashSync, compareSync } from "bcrypt";
+import { hashSync, compareSync } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import {
   ChangePasswordSchema,
@@ -155,13 +155,14 @@ export const getAllUsers = tryCatch(
   async (req: Request<{}, {}, {}, PageAndLimitRequest>, res: Response) => {
     const page = +req.query.page! || 1;
     const limit = +req.query.limit! || 5;
+
     if (page <= 0 || limit <= 0) {
       return res
         .status(400)
         .json({ error: "Page and limit must be positive integers." });
     }
-    const skip = (page - 1) * limit;
 
+    const skip = (page - 1) * limit;
     const userFilter = { deletedAt: null };
 
     const [count, users] = await prismaClient.$transaction([
@@ -270,11 +271,13 @@ export const changeUserRole = tryCatch(
         .status(403)
         .json({ message: "Admins cannot change their own role." });
     }
+
     const validatedData = ChangeUserRoleSchema.parse(req.body);
     const user = await prismaClient.user.update({
       where: { id: req.params.userId },
       data: validatedData,
     });
+
     return res.status(200).json({ user });
   }
 );

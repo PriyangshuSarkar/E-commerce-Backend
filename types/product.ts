@@ -3,10 +3,9 @@ import type {
   AddCategorySchema,
   CategoryIdSchema,
   CreateProductSchema,
-  FilterAndSortProductsSchema,
   PageAndLimitSchema,
   ProductIdSchema,
-  SearchQuerySchema,
+  SearchFilterSortProductsSchema,
   UpdateProductSchema,
 } from "../schemas/product";
 
@@ -22,8 +21,6 @@ export type CategoryIdRequest = infer_<typeof CategoryIdSchema>;
 
 export type PageAndLimitRequest = infer_<typeof PageAndLimitSchema>;
 
-export type SearchQueryRequest = infer_<typeof SearchQuerySchema>;
-
-export type FilterAndSortProductsRequest = infer_<
-  typeof FilterAndSortProductsSchema
+export type SearchFilterSortProductsRequest = infer_<
+  typeof SearchFilterSortProductsSchema
 >;

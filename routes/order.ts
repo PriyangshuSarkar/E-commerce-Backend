@@ -6,13 +6,24 @@ import {
   createOrder,
   getAllOrders,
   getOrderById,
+  paymentVerification,
   updateOrder,
 } from "../controllers/order";
 import { adminMiddleware } from "../middlewares/admin";
+import { shiprocketAuth } from "../middlewares/shiprocketAuth";
 
 const orderRouter: Router = Router();
 
-orderRouter.post("/create", authMiddleware, createOrder);
+orderRouter.get("/test", shiprocketAuth);
+
+orderRouter.post("/create", authMiddleware, shiprocketAuth, createOrder);
+
+orderRouter.post(
+  "/payment/verification",
+  authMiddleware,
+  shiprocketAuth,
+  paymentVerification
+);
 
 orderRouter.get("/total", authMiddleware, calculateOrderTotal);
 
@@ -25,8 +36,13 @@ orderRouter.put(
 
 orderRouter.get("/all", authMiddleware, getAllOrders);
 
-orderRouter.get("/get/:orderId", authMiddleware, getOrderById);
+orderRouter.get("/get/:orderId", authMiddleware, shiprocketAuth, getOrderById);
 
-orderRouter.put("/cancel/:orderId", authMiddleware, cancelOrder);
+orderRouter.put(
+  "/cancel/:orderId",
+  authMiddleware,
+  shiprocketAuth,
+  cancelOrder
+);
 
 export default orderRouter;

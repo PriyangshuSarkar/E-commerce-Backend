@@ -10,10 +10,9 @@ import type {
   AddCategoryRequest,
   CategoryIdRequest,
   CreateProductRequest,
-  FilterAndSortProductsRequest,
   PageAndLimitRequest,
   ProductIdRequest,
-  SearchQueryRequest,
+  SearchFilterSortProductsRequest,
   UpdateProductRequest,
 } from "../types/product";
 
@@ -31,21 +30,27 @@ export const createProduct = tryCatch(
         name: validatedData.name,
         description: validatedData.description,
         categoryId: validatedData.categoryId,
-        price: validatedData.price,
-        stock: validatedData.stock,
-        sku: validatedData.sku,
         tags: {
-          connectOrCreate: validatedData.tags.map((tags: string) => ({
-            where: { name: tags },
-            create: { name: tags },
+          connectOrCreate: validatedData.tags.map((tag: string) => ({
+            where: { name: tag },
+            create: { name: tag },
           })),
         },
         images: {
           create: validatedData.imageUrls?.map((url) => ({ url })),
         },
+        variants: {
+          create: validatedData.variants.map((variant) => ({
+            sku: variant.sku,
+            size: variant.size,
+            price: variant.price,
+            stock: variant.stock,
+          })),
+        },
       },
-      include: { tags: true, images: true, category: true },
+      include: { tags: true, images: true, category: true, variants: true },
     });
+
     return res.status(201).json({ product });
   }
 );
@@ -70,9 +75,6 @@ export const updateProduct = tryCatch(
       name: validatedData.name,
       description: validatedData.description,
       categoryId: validatedData.categoryId,
-      price: validatedData.price,
-      stock: validatedData.stock,
-      sku: validatedData.sku,
       images: {
         deleteMany: validatedData.removeImageUrls?.length
           ? {
@@ -91,12 +93,31 @@ export const updateProduct = tryCatch(
             name: tag,
           })) || [],
       },
+      variants: {
+        upsert: validatedData.variants?.map((variant) => ({
+          where: { sku: variant.sku },
+          update: {
+            size: variant.size,
+            price: variant.price,
+            stock: variant.stock,
+          },
+          create: {
+            sku: variant.sku,
+            size: variant.size,
+            price: variant.price,
+            stock: variant.stock,
+          },
+        })),
+        deleteMany: validatedData.removeVariants?.map((variant) => ({
+          sku: variant.sku,
+        })),
+      },
     };
 
     const updatedProduct = await prismaClient.product.update({
       where: { id: req.params.productId!, deletedAt: null },
       data: updateData,
-      include: { tags: true, images: true, category: true },
+      include: { tags: true, images: true, category: true, variants: true },
     });
 
     return res.status(200).json({ updatedProduct });
@@ -111,10 +132,16 @@ export const deleteProduct = tryCatch(
     const existingProduct = await prismaClient.product.findFirstOrThrow({
       where: { id, deletedAt: null },
     });
-    await prismaClient.product.update({
-      where: { id, deletedAt: null },
-      data: { deletedAt: new Date() },
-    });
+    await prismaClient.$transaction([
+      prismaClient.product.update({
+        where: { id, deletedAt: null },
+        data: { deletedAt: new Date() },
+      }),
+      prismaClient.productVariant.updateMany({
+        where: { productId: id },
+        data: { deletedAt: new Date() },
+      }),
+    ]);
     return res.status(200).json({
       message: `Product: ${existingProduct.name} with ID: ${id} has been deleted`,
     });
@@ -139,7 +166,7 @@ export const listProducts = tryCatch(
         skip,
         take: limit,
         where: { deletedAt: null },
-        include: { category: true, tags: true, images: true },
+        include: { category: true, tags: true, images: true, variants: true },
       }),
     ]);
     const totalPages = Math.ceil(count / limit);
@@ -159,7 +186,7 @@ export const getProductById = tryCatch(
 
     const existingProduct = await prismaClient.product.findFirstOrThrow({
       where: { id, deletedAt: null },
-      include: { category: true, tags: true, images: true },
+      include: { category: true, tags: true, images: true, variants: true },
     });
     return res.status(200).json({ existingProduct });
   }
@@ -183,8 +210,7 @@ export const addCategory = tryCatch(
   }
 );
 
-// *Add Category
-// !Admin Only
+// *Get Category
 export const getAllCategories = tryCatch(
   async (req: Request, res: Response) => {
     const allCategories = await prismaClient.category.findMany({});
@@ -208,21 +234,22 @@ export const deleteCategory = tryCatch(
   }
 );
 
-// *Search Products
-export const searchProducts = tryCatch(
-  async (req: Request<{}, {}, {}, SearchQueryRequest>, res: Response) => {
-    const page = +req.query.page! || 1;
-    const limit = +req.query.limit! || 5;
-    if (page <= 0 || limit <= 0) {
-      return res
-        .status(400)
-        .json({ error: "Page and limit must be positive integers." });
-    }
+// *Search, Filter, and Sort Products
+export const searchFilterSortProducts = tryCatch(
+  async (
+    req: Request<{}, {}, {}, SearchFilterSortProductsRequest>,
+    res: Response
+  ) => {
+    const page = Math.max(1, +req.query.page! || 1);
+    const limit = Math.max(1, +req.query.limit! || 5);
     const skip = (page - 1) * limit;
-    const searchQuery = req.query.query || "";
 
-    const filters = {
-      OR: [
+    const searchQuery = req.query.query || "";
+    const filters: any = { deletedAt: null };
+
+    // Search filters
+    if (searchQuery) {
+      filters.OR = [
         {
           name: {
             contains: searchQuery,
@@ -249,44 +276,10 @@ export const searchProducts = tryCatch(
             },
           },
         },
-      ],
-      deletedAt: null,
-    };
-    const [count, products] = await prismaClient.$transaction([
-      prismaClient.product.count({ where: filters }),
-      prismaClient.product.findMany({
-        skip,
-        take: limit,
-        where: filters,
-        include: {
-          category: true,
-          tags: true,
-          images: true,
-        },
-      }),
-    ]);
-    const totalPages = Math.ceil(count / limit);
-    return res.status(200).json({
-      products,
-      currentPage: page,
-      totalPages,
-      totalCount: count,
-    });
-  }
-);
+      ];
+    }
 
-// *Filter and Sort Products
-export const filterAndSortProducts = tryCatch(
-  async (
-    req: Request<{}, {}, {}, FilterAndSortProductsRequest>,
-    res: Response
-  ) => {
-    const page = Math.max(1, +req.query.page! || 1);
-    const limit = Math.max(1, +req.query.limit! || 5);
-    const skip = (page - 1) * limit;
-
-    const filters: any = { deletedAt: null };
-
+    // Additional filters
     if (req.query.category) {
       filters.categoryId = req.query.category;
     }
@@ -324,6 +317,7 @@ export const filterAndSortProducts = tryCatch(
           category: true,
           tags: true,
           images: true,
+          variants: true,
         },
       }),
     ]);

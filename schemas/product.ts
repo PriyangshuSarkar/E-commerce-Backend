@@ -1,25 +1,38 @@
 import { object, string, enum as enum_ } from "zod";
 
 export const CreateProductSchema = object({
-  sku: string(),
   name: string(),
   description: string(),
   tags: string().toLowerCase().array(),
-  price: string().transform(Number),
   categoryId: string(),
-  stock: string().transform(Number),
   imageUrls: string().array().optional(),
+  variants: object({
+    sku: string(),
+    size: string(),
+    price: string().transform(Number),
+    stock: string().transform(Number),
+  }).array(),
 });
 
 export const UpdateProductSchema = object({
-  sku: string().optional(),
   name: string().optional(),
   description: string().optional(),
   tags: string().toLowerCase().array().optional(),
-  price: string().transform(Number).optional(),
   categoryId: string().optional(),
-  stock: string().transform(Number).optional(),
   imageUrls: string().array().optional(),
+  variants: object({
+    sku: string().optional(),
+    size: string().optional(),
+    price: string().transform(Number).optional(),
+    stock: string().transform(Number).optional(),
+  })
+    .array()
+    .optional(),
+  removeVariants: object({
+    sku: string().optional(),
+  })
+    .array()
+    .optional(),
   removeTags: string().array().optional(), /// New image URLs
   removeImageUrls: string().array().optional(), // URLs of images to remove
 }).superRefine((data) => {
@@ -47,13 +60,8 @@ export const PageAndLimitSchema = object({
   limit: string().optional(),
 });
 
-export const SearchQuerySchema = object({
+export const SearchFilterSortProductsSchema = object({
   query: string().optional(),
-  page: string().optional(),
-  limit: string().optional(),
-});
-
-export const FilterAndSortProductsSchema = object({
   page: string().optional(),
   limit: string().optional(),
   category: string().optional(),

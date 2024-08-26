@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
-import { unlink } from "node:fs/promises";
+import { rm } from "fs";
 
 export const errorHandler = (
   err: any,
@@ -17,31 +17,31 @@ export const errorHandler = (
     message = "Un-processable Entity!";
   }
 
-  res.status(status).json({
-    message,
-    error: err,
-  });
   // Clean up uploaded files if any
   if (req.filePaths && req.filePaths.length > 0) {
     cleanupFiles(req.filePaths).finally(() => {
-      res.status(status).json({
+      return res.status(status).json({
         message,
         error: err,
       });
     });
   } else {
-    res.status(status).json({
+    return res.status(status).json({
       message,
       error: err,
     });
   }
+  return res.status(status).json({
+    message,
+    error: err,
+  });
 };
 
 // Function to clean up files
 async function cleanupFiles(filePaths: string[]) {
   for (const filePath of filePaths) {
     try {
-      await unlink(filePath);
+      await rm(filePath, () => console.log("Deleted"));
     } catch (error) {
       console.error("Error deleting file:", error);
     }

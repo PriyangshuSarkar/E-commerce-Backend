@@ -1,7 +1,7 @@
 import { number, object, string } from "zod";
 
 export const ProductIdSchema = object({
-  productId: string().optional(),
+  productVariantId: string().optional(),
 });
 
 export const ProductQuantitySchema = object({

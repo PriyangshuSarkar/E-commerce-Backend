@@ -4,11 +4,10 @@ import {
   createProduct,
   deleteCategory,
   deleteProduct,
-  filterAndSortProducts,
   getAllCategories,
   getProductById,
   listProducts,
-  searchProducts,
+  searchFilterSortProducts,
   updateProduct,
 } from "../controllers/product";
 import { authMiddleware } from "../middlewares/auth";
@@ -57,8 +56,6 @@ productRoutes.delete(
   deleteCategory
 );
 
-productRoutes.get("/search", searchProducts);
-
-productRoutes.get("/filter", filterAndSortProducts);
+productRoutes.get("/search", searchFilterSortProducts);
 
 export default productRoutes;

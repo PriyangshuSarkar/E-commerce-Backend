@@ -20,7 +20,8 @@ app.use("/api", rootRouter);
 app.use(errorHandler);
 
 // *Server Start
-app.listen(process.env.PORT, (err?: any) => {
+const port = process.env.PORT ?? 8000;
+app.listen(port, (err?: any) => {
   if (err) {
     console.log(`Server failed to start with the error:\n${err}`);
   } else {
