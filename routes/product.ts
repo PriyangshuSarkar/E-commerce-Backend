@@ -1,12 +1,10 @@
 import { Router } from "express";
 import {
-  addCategory,
   createProduct,
-  deleteCategory,
   deleteProduct,
-  getAllCategories,
   getProductById,
   listProducts,
+  searchFilterSortAdminProducts,
   searchFilterSortProducts,
   updateProduct,
 } from "../controllers/product";
@@ -43,19 +41,12 @@ productRoutes.get("/get/all", listProducts);
 
 productRoutes.get("/get/:productId", getProductById);
 
-productRoutes.post(
-  "/category/add",
-  [authMiddleware, adminMiddleware],
-  addCategory
-);
-productRoutes.get("/category/all", getAllCategories);
-
-productRoutes.delete(
-  "/category/delete/:categoryId",
-  [authMiddleware, adminMiddleware],
-  deleteCategory
-);
-
 productRoutes.get("/search", searchFilterSortProducts);
+
+productRoutes.get(
+  "/search/admin",
+  authMiddleware,
+  searchFilterSortAdminProducts
+);
 
 export default productRoutes;

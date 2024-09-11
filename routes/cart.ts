@@ -13,10 +13,14 @@ cartRouter.get("/get", authMiddleware, getCart);
 
 cartRouter.delete("/remove/:cartItemId", authMiddleware, removeFromCart);
 
-cartRouter.post("/update/:productId", authMiddleware, setCartItemQuantity);
+cartRouter.post(
+  "/update/:productVariantId",
+  authMiddleware,
+  setCartItemQuantity
+);
 
 cartRouter.post(
-  "/change/:productId",
+  "/change/:productVariantId",
   authMiddleware,
   updateCartItemQuantityByValue
 );

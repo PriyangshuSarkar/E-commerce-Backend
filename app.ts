@@ -2,11 +2,12 @@ import express, { json, static as static_, type Express } from "express";
 import rootRouter from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 import { PrismaClient } from "@prisma/client";
-import logger from "./utils/logger";
 import loggerMiddleware from "./middlewares/logger";
+import cookieParser from "cookie-parser";
 
 const app: Express = express();
 
+app.use(cookieParser());
 app.use(json());
 app.use(loggerMiddleware);
 app.use("/public", static_("./public"));

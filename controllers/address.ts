@@ -70,6 +70,9 @@ export const listAddress = tryCatch(async (req: Request, res: Response) => {
       userId: req.user.id,
       deletedAt: null,
     },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
   return res.status(200).json({ addresses });
 });

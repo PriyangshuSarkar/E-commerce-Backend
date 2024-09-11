@@ -43,16 +43,8 @@ export const UpdateProductSchema = object({
   return data;
 });
 
-export const AddCategorySchema = object({
-  category: string().toLowerCase(),
-});
-
 export const ProductIdSchema = object({
   productId: string().optional(),
-});
-
-export const CategoryIdSchema = object({
-  categoryId: string().optional(),
 });
 
 export const PageAndLimitSchema = object({

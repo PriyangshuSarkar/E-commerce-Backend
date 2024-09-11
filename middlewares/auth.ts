@@ -5,15 +5,14 @@ import { prismaClient } from "../app";
 
 export const authMiddleware = tryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
+    // const authHeader = req.headers.authorization;
+    const token = req.cookies.authToken;
 
-    if (!authHeader) {
+    if (!token) {
       return res
         .status(401)
-        .json({ error: "Unauthorized: No token provided!" });
+        .json({ error: "Unauthorized: No cookie provided!" });
     }
-
-    const token = authHeader;
 
     const payload = verify(token, process.env.JWT_SECRET!) as {
       userId: string;

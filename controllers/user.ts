@@ -13,7 +13,7 @@ import type {
 } from "../types/user";
 import { prismaClient } from "../app";
 import { hashSync, compareSync } from "bcryptjs";
-import { sign } from "jsonwebtoken";
+import { sign, verify } from "jsonwebtoken";
 import {
   ChangePasswordSchema,
   ChangeUserRoleSchema,
@@ -22,6 +22,8 @@ import {
   SignupSchema,
   UpdateUserSchema,
 } from "../schemas/user";
+import { sendEmail, sendOtpEmail } from "../utils/emailService";
+import { generateOtp } from "../utils/generateOtp";
 
 // *Signup Route
 export const signup = tryCatch(
@@ -30,6 +32,23 @@ export const signup = tryCatch(
     const user = await prismaClient.user.findFirst({
       where: { email: validatedData.email },
     });
+    const sendVerificationEmail = async (
+      userName: string,
+      email: string,
+      token: string
+    ) => {
+      const emailSubject = "Confirm Your Email Address";
+      const emailText = `Hello ${userName},\n\nThank you for signing up! Please confirm your email address by clicking the following link:\n\n${process.env.WEBSITE}/api/user/confirm/email?token=${token}\n\nBest regards,\nYour Company Name`;
+
+      await sendEmail(email, emailSubject, emailText);
+    };
+    const token = sign(
+      { userId: user?.id ?? "new_user_id" },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: process.env.JWT_EXPIRATION_TIME!,
+      }
+    );
 
     if (user) {
       if (user.deletedAt) {
@@ -37,45 +56,93 @@ export const signup = tryCatch(
           where: { id: user.id },
           data: {
             deletedAt: null,
-            password: hashSync(validatedData.password, 10),
+            password: validatedData.password,
           },
         });
-        return res.status(200).json({ message: "Account reactivated!" });
+
+        await sendVerificationEmail(user.name, user.email, token);
+        return res
+          .status(200)
+          .json({ message: "Account reactivated! Please verify your email." });
+      } else if (!user.emailVerified) {
+        await sendVerificationEmail(user.name, user.email, token);
+        return res.status(200).json({
+          message: "Email verification sent! Please verify your email.",
+        });
       } else {
-        return res.status(400).json({ error: "User already exists!" });
+        return res
+          .status(400)
+          .json({ error: "User already exists and email is verified!" });
       }
     }
+    // User does not exist, create a new one
     const newUser = await prismaClient.user.create({
       data: {
         name: validatedData.name,
         email: validatedData.email,
-        password: hashSync(validatedData.password, 10),
+        password: validatedData.password,
       },
     });
 
     const { password: _, ...userWithoutPassword } = newUser;
 
-    const token = sign({ userId: newUser.id }, process.env.JWT_SECRET!, {
-      expiresIn: process.env.JWT_EXPIRATION_TIME!,
-    });
+    await sendVerificationEmail(newUser.name, newUser.email, token);
 
-    return res.status(201).json({ user: userWithoutPassword, token });
+    return res
+      .status(201)
+      .cookie("authToken", token, {
+        httpOnly: true,
+        maxAge:
+          parseInt(process.env.JWT_EXPIRATION_TIME!, 10) * 24 * 60 * 60 * 1000,
+      })
+      .json({
+        user: userWithoutPassword,
+        message: "User created! Please verify your email.",
+      });
   }
 );
+
+// *Email Confirmation Controller
+export const confirmEmail = tryCatch(async (req: Request, res: Response) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+
+  try {
+    const decoded = verify(token as string, process.env.JWT_SECRET!) as {
+      userId: string;
+    };
+    await prismaClient.user.update({
+      where: { id: decoded.userId },
+      data: { emailVerified: true }, // Assuming you have this field
+    });
+
+    return res.status(200).json({ message: "Email confirmed successfully!" });
+  } catch (error) {
+    return res.status(400).json({ error: "Invalid or expired token" });
+  }
+});
 
 // *Login Route
 export const login = tryCatch(
   async (req: Request<{}, {}, LoginRequest>, res: Response) => {
     const validatedData = LoginSchema.parse(req.body);
     const user = await prismaClient.user.findFirst({
-      where: { email: validatedData.email, deletedAt: null },
+      where: {
+        email: validatedData.email,
+        deletedAt: null,
+        emailVerified: true,
+      },
     });
 
     if (!user) {
       return res.status(404).json({ error: "User doesn't exist!" });
     }
 
-    if (!compareSync(validatedData.password, user.password)) {
+    if (validatedData.password !== user.password) {
+      // Removed compareSync
       return res.status(401).json({ error: "Incorrect password!" });
     }
 
@@ -85,7 +152,14 @@ export const login = tryCatch(
       expiresIn: process.env.JWT_EXPIRATION_TIME!,
     });
 
-    return res.status(200).json({ user: userWithoutPassword, token });
+    return res
+      .status(200)
+      .cookie("authToken", token, {
+        httpOnly: true,
+        maxAge:
+          parseInt(process.env.JWT_EXPIRATION_TIME!, 10) * 24 * 60 * 60 * 1000,
+      })
+      .json({ user: userWithoutPassword, token });
   }
 );
 
@@ -102,18 +176,47 @@ export const me = tryCatch(async (req: Request, res: Response) => {
   return res.status(200).json(user);
 });
 
+// *Request OTP Route
+export const requestOtp = tryCatch(async (req: Request, res: Response) => {
+  const otpCode = generateOtp(req.user.email, req.user.password);
+  await sendOtpEmail(req.user.email, otpCode);
+
+  return res.status(200).json({ message: "OTP sent to your email!" });
+});
+
 // *Change Password Route
 export const changePassword = tryCatch(
   async (req: Request<{}, {}, ChangePasswordRequest>, res: Response) => {
     const validatedData = ChangePasswordSchema.parse(req.body);
-    if (!compareSync(validatedData.oldPassword, req.user.password)) {
-      return res.status(401).json({ error: "Incorrect password!" });
+    if (generateOtp(req.user.email, req.user.password) !== validatedData.otp) {
+      return res.status(400).json({ error: "Invalid OTP!" });
     }
     await prismaClient.user.update({
       where: { id: req.user.id!, deletedAt: null },
-      data: { password: hashSync(validatedData.newPassword, 10) },
+      data: { password: validatedData.newPassword }, // Removed hashSync
     });
     return res.status(201).json({ message: "Password updated successfully!" });
+  }
+);
+
+// *Delete User Route
+export const deleteUser = tryCatch(
+  async (req: Request<{}, {}, DeleteUserRequest>, res: Response) => {
+    const validatedData = DeleteUserSchema.parse(req.body);
+
+    if (validatedData.password !== req.user.password) {
+      // Removed compareSync
+      return res.status(401).json({ error: "Incorrect password!" });
+    }
+
+    await prismaClient.user.update({
+      where: { id: req.user.id!, deletedAt: null },
+      data: { deletedAt: new Date(), emailVerified: false },
+    });
+
+    return res.status(201).json({
+      message: `User ${req.user.name} of ID: ${req.user.id} is deleted, Successfully.`,
+    });
   }
 );
 
@@ -126,26 +229,6 @@ export const updateUser = tryCatch(
       data: validatedData,
     });
     return res.status(201).json({ updatedUser });
-  }
-);
-
-// *Delete User Route
-export const deleteUser = tryCatch(
-  async (req: Request<{}, {}, DeleteUserRequest>, res: Response) => {
-    const validatedData = DeleteUserSchema.parse(req.body);
-
-    if (!compareSync(validatedData.password, req.user.password)) {
-      return res.status(401).json({ error: "Incorrect password!" });
-    }
-
-    await prismaClient.user.update({
-      where: { id: req.user.id!, deletedAt: null },
-      data: { deletedAt: new Date() },
-    });
-
-    return res.status(201).json({
-      message: `User ${req.user.name} of ID: ${req.user.id} is deleted, Successfully.`,
-    });
   }
 );
 
@@ -171,6 +254,9 @@ export const getAllUsers = tryCatch(
         skip,
         take: limit,
         where: userFilter,
+        orderBy: {
+          createdAt: "desc", // Orders by `createdAt` in descending order (latest first)
+        },
       }),
     ]);
 
@@ -269,7 +355,7 @@ export const changeUserRole = tryCatch(
     if (req.params.userId === req.user.id) {
       return res
         .status(403)
-        .json({ message: "Admins cannot change their own role." });
+        .json({ message: "User cannot change their own role." });
     }
 
     const validatedData = ChangeUserRoleSchema.parse(req.body);

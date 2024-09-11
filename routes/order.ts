@@ -2,28 +2,23 @@ import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import {
   calculateOrderTotal,
-  cancelOrder,
+  confirmAndGenerateOrdersCsv,
+  confirmOrderCancellation,
   createOrder,
   getAllOrders,
   getOrderById,
+  getUserOrders,
   paymentVerification,
+  requestOrderCancellation,
   updateOrder,
 } from "../controllers/order";
 import { adminMiddleware } from "../middlewares/admin";
-import { shiprocketAuth } from "../middlewares/shiprocketAuth";
 
 const orderRouter: Router = Router();
 
-orderRouter.get("/test", shiprocketAuth);
+orderRouter.post("/create", authMiddleware, createOrder);
 
-orderRouter.post("/create", authMiddleware, shiprocketAuth, createOrder);
-
-orderRouter.post(
-  "/payment/verification",
-  authMiddleware,
-  shiprocketAuth,
-  paymentVerification
-);
+orderRouter.post("/payment/verification", authMiddleware, paymentVerification);
 
 orderRouter.get("/total", authMiddleware, calculateOrderTotal);
 
@@ -34,15 +29,30 @@ orderRouter.put(
   updateOrder
 );
 
-orderRouter.get("/all", authMiddleware, getAllOrders);
+orderRouter.get("/all", authMiddleware, adminMiddleware, getAllOrders);
 
-orderRouter.get("/get/:orderId", authMiddleware, shiprocketAuth, getOrderById);
+orderRouter.get("/user/all", authMiddleware, getUserOrders);
+
+orderRouter.get("/get/:orderId", authMiddleware, getOrderById);
+
+orderRouter.put(
+  "/request/cancel/:orderId",
+  authMiddleware,
+  requestOrderCancellation
+);
 
 orderRouter.put(
   "/cancel/:orderId",
   authMiddleware,
-  shiprocketAuth,
-  cancelOrder
+  adminMiddleware,
+  confirmOrderCancellation
+);
+
+orderRouter.put(
+  "/confirm/generate/csv",
+  authMiddleware,
+  adminMiddleware,
+  confirmAndGenerateOrdersCsv
 );
 
 export default orderRouter;

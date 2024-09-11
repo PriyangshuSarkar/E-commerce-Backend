@@ -66,6 +66,9 @@ export const getReviewByProduct = tryCatch(
         take: limit,
         where: reviewFilter,
         include: { user: true, product: true },
+        orderBy: {
+          createdAt: "desc",
+        },
       }),
     ]);
 

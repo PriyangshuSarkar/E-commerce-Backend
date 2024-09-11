@@ -3,8 +3,8 @@ import { tryCatch } from "../middlewares/tryCatch";
 import { prismaClient } from "../app";
 import type {
   CartItemIdRequest,
-  ProductIdRequest,
   ProductQuantityRequest,
+  ProductVariantIdRequest,
 } from "../types/cart";
 
 // *Get Cart
@@ -25,7 +25,13 @@ export const getCart = tryCatch(async (req: Request, res: Response) => {
             deletedAt: null,
           },
         },
+        orderBy: {
+          createdAt: "desc", // Orders by `createdAt` in descending order (latest first)
+        },
       },
+    },
+    orderBy: {
+      createdAt: "desc", // Orders by `createdAt` in descending order (latest first)
     },
   });
   // Adjust quantities and update in database
@@ -92,19 +98,21 @@ export const removeFromCart = tryCatch(
 // *Set Cart Item Quantity
 export const setCartItemQuantity = tryCatch(
   async (
-    req: Request<ProductIdRequest, {}, {}, ProductQuantityRequest>,
+    req: Request<ProductVariantIdRequest, {}, {}, ProductQuantityRequest>,
     res: Response
   ) => {
-    const productId = req.params.productVariantId!;
+    const productVariantId = req.params.productVariantId!;
     let quantity = +req.query.productQuantity!;
 
-    if (!productId || isNaN(quantity)) {
-      return res.status(400).json({ error: "Invalid productId or quantity" });
+    if (!productVariantId || isNaN(quantity)) {
+      return res
+        .status(400)
+        .json({ error: "Invalid productVariantId or quantity" });
     }
 
     const productVariant = await prismaClient.productVariant.findFirstOrThrow({
       where: {
-        productId: productId,
+        id: productVariantId,
         deletedAt: null,
       },
     });
@@ -172,21 +180,21 @@ export const setCartItemQuantity = tryCatch(
 // *Update Cart Item Quantity by Value
 export const updateCartItemQuantityByValue = tryCatch(
   async (
-    req: Request<ProductIdRequest, {}, {}, ProductQuantityRequest>,
+    req: Request<ProductVariantIdRequest, {}, {}, ProductQuantityRequest>,
     res: Response
   ) => {
-    const productId = req.params.productVariantId!;
+    const productVariantId = req.params.productVariantId!;
     let quantityChange = +req.query.productQuantityChange!;
 
-    if (!productId || isNaN(quantityChange)) {
+    if (!productVariantId || isNaN(quantityChange)) {
       return res
         .status(400)
-        .json({ error: "Invalid productId or quantity change" });
+        .json({ error: "Invalid productVariantId or quantity change" });
     }
 
     const productVariant = await prismaClient.productVariant.findFirstOrThrow({
       where: {
-        productId: productId,
+        id: productVariantId,
         deletedAt: null,
       },
     });

@@ -1,11 +1,11 @@
 import type { infer as infer_ } from "zod";
 import type {
   CartItemIdSchema,
-  ProductIdSchema,
   ProductQuantitySchema,
+  ProductVariantIdSchema,
 } from "../schemas/cart";
 
-export type ProductIdRequest = infer_<typeof ProductIdSchema>;
+export type ProductVariantIdRequest = infer_<typeof ProductVariantIdSchema>;
 
 export type ProductQuantityRequest = infer_<typeof ProductQuantitySchema>;
 

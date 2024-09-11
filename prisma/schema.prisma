@@ -19,15 +19,15 @@ datasource db {
 }
 
 enum Role {
+  MASTER
   ADMIN
   USER
 }
 
 enum OrderStatus {
   PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
+  ORDERED
+  PENDING_CANCELLATION
   CANCELLED
 }
 
@@ -38,10 +38,16 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum SaleType {
+  REGULAR
+  FLASH
+}
+
 model User {
   id                       String    @id @default(uuid())
   name                     String
   email                    String    @unique
+  emailVerified            Boolean   @default(false)
   password                 String
   role                     Role      @default(USER)
   defaultShippingAddressId String?
@@ -53,6 +59,7 @@ model User {
   cart                     Cart?
   orders                   Order[]
   reviews                  Review[]
+  product                  Product[]
 
   @@fulltext([name, email])
   @@map("users")
@@ -81,9 +88,14 @@ model Address {
 }
 
 model Category {
-  id       String    @id @default(uuid())
-  name     String    @unique
+  id       String             @id @default(uuid())
+  name     String             @unique
   products Product[]
+  discount CategoryDiscount[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@fulltext([name])
   @@map("categories")
@@ -99,18 +111,22 @@ model Tag {
 }
 
 model Product {
-  id          String           @id @default(uuid())
+  id          String            @id @default(uuid())
   name        String
-  description String           @db.Text
+  description String            @db.Text
   categoryId  String
-  category    Category         @relation(fields: [categoryId], references: [id])
+  category    Category          @relation(fields: [categoryId], references: [id])
   tags        Tag[]
   reviews     Review[]
   images      ProductImage[]
   variants    ProductVariant[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  deletedAt   DateTime?
+  discount    ProductDiscount[]
+  createdBy   String
+  user        User              @relation(fields: [createdBy], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@fulltext([name, description])
   @@map("products")
@@ -217,4 +233,34 @@ model Review {
   deletedAt DateTime?
 
   @@map("reviews")
+}
+
+model CategoryDiscount {
+  id         String    @id @default(uuid())
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+  discount   Decimal
+  type       SaleType
+  validFrom  DateTime
+  validTo    DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@map("category_discounts")
+}
+
+model ProductDiscount {
+  id        String    @id @default(uuid())
+  productId String
+  product   Product   @relation(fields: [productId], references: [id])
+  discount  Decimal
+  type      SaleType
+  validFrom DateTime
+  validTo   DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("product_discounts")
 }

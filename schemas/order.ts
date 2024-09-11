@@ -5,6 +5,8 @@ import {
   string,
   enum as enum_,
   number,
+  date,
+  array,
 } from "zod";
 
 export const CreateOrderSchema = object({
@@ -20,7 +22,14 @@ export const PaymentVerificationSchema = object({
 });
 
 export const UpdateOrderSchema = object({
-  status: enum_(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"]),
+  payment: enum_(["DUE", "FAILED", "SUCCESSFUL", "REFUNDED"]).optional(),
+  status: enum_(["PENDING", "ORDERED"]).optional(),
+}).superRefine((data) => {
+  const hasValue = Object.values(data).some((value) => value !== undefined);
+  if (!hasValue) {
+    throw new Error("At least one field must be provided for update.");
+  }
+  return data;
 });
 
 export const ProductWithPriceSchema = object({
@@ -38,7 +47,31 @@ export const CartItemWithProductSchema = object({
     product: object({
       id: string(),
       name: string(),
+      description: string(),
+      discount: object({
+        id: string(),
+        discount: instanceof_(Decimal),
+        type: string(),
+        validFrom: date(),
+        validTo: date(),
+      })
+        .array()
+        .optional(),
+      category: object({
+        id: string(),
+        name: string(),
+        discount: object({
+          id: string(),
+          discount: instanceof_(Decimal),
+          type: string(), // Use a Zod enum if you have one for SaleType
+          validFrom: date(), // Convert to Date
+          validTo: date(), // Convert to Date
+        })
+          .array()
+          .optional(),
+      }),
     }),
+
     price: instanceof_(Decimal),
   }),
   quantity: number().int().positive(),
@@ -48,7 +81,23 @@ export const OrderIdSchema = object({
   orderId: string().optional(),
 });
 
+export const SearchFilterSchema = object({
+  page: string().optional(),
+  limit: string().optional(),
+  id: string().optional(),
+  status: enum_([
+    "PENDING",
+    "ORDERED",
+    "PENDING_CANCELLATION",
+    "CANCELLED",
+  ]).optional(),
+  payment: enum_(["DUE", "FAILED", "SUCCESSFUL", "REFUNDED"]).optional(),
+});
 export const PageAndLimitSchema = object({
   page: string().optional(),
   limit: string().optional(),
+});
+
+export const ActionSchema = object({
+  action: enum_(["confirm", "reject"]),
 });

@@ -1,6 +1,6 @@
 import { number, object, string } from "zod";
 
-export const ProductIdSchema = object({
+export const ProductVariantIdSchema = object({
   productVariantId: string().optional(),
 });
 

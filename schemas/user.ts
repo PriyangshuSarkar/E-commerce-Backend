@@ -13,7 +13,7 @@ export const LoginSchema = object({
 });
 
 export const ChangePasswordSchema = object({
-  oldPassword: string(),
+  otp: string(),
   newPassword: string().min(6),
 });
 
@@ -33,7 +33,7 @@ export const DeleteUserSchema = object({
 });
 
 export const ChangeUserRoleSchema = object({
-  role: enum_(["ADMIN", "USER"]),
+  role: enum_(["MASTER", "ADMIN", "USER"]),
 });
 
 export const PageAndLimitSchema = object({

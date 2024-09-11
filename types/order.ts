@@ -1,11 +1,13 @@
 import type { infer as infer_ } from "zod";
 import type {
+  ActionSchema,
   CartItemWithProductSchema,
   CreateOrderSchema,
   OrderIdSchema,
   PageAndLimitSchema,
   PaymentVerificationSchema,
   ProductWithPriceSchema,
+  SearchFilterSchema,
   UpdateOrderSchema,
 } from "../schemas/order";
 
@@ -23,4 +25,8 @@ export type CartItemWithProduct = infer_<typeof CartItemWithProductSchema>;
 
 export type OrderIdRequest = infer_<typeof OrderIdSchema>;
 
+export type SearchFilterRequest = infer_<typeof SearchFilterSchema>;
+
 export type PageAndLimitRequest = infer_<typeof PageAndLimitSchema>;
+
+export type ActionRequest = infer_<typeof ActionSchema>;
